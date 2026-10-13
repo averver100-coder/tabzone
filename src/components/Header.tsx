@@ -54,13 +54,32 @@ export const Header: React.FC<HeaderProps> = ({
     return () => clearInterval(interval);
   }, []);
 
+  useEffect(() => {
+    const handleFullscreenChange = () => {
+      setIsFullscreen(Boolean(document.fullscreenElement));
+    };
+    handleFullscreenChange();
+    document.addEventListener('fullscreenchange', handleFullscreenChange);
+    document.addEventListener('webkitfullscreenchange', handleFullscreenChange);
+    return () => {
+      document.removeEventListener('fullscreenchange', handleFullscreenChange);
+      document.removeEventListener('webkitfullscreenchange', handleFullscreenChange);
+    };
+  }, []);
+
   const toggleFullscreen = () => {
     if (!document.fullscreenElement) {
-      document.documentElement.requestFullscreen().catch(() => {});
-      setIsFullscreen(true);
+      document.documentElement.requestFullscreen().then(() => {
+        setIsFullscreen(true);
+      }).catch(() => {
+        setIsFullscreen(true);
+      });
     } else {
-      document.exitFullscreen().catch(() => {});
-      setIsFullscreen(false);
+      document.exitFullscreen().then(() => {
+        setIsFullscreen(false);
+      }).catch(() => {
+        setIsFullscreen(false);
+      });
     }
   };
 
@@ -130,7 +149,8 @@ export const Header: React.FC<HeaderProps> = ({
             </button>
           )}
 
-          <PWAInstallButton />
+          {/* Hide PWA install button in fullscreen / kiosk mode */}
+          {!isFullscreen && <PWAInstallButton />}
 
           {/* Fullscreen kiosk button (Touch target 48px) */}
           <button
