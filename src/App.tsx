@@ -41,10 +41,10 @@ import {
   checkSSORestoration,
   clearAuthSession,
   ensureSuperAdminInDb,
-  loginWithStaffEmail,
   parseAuthError,
   saveAuthSession,
-  signInWithGoogle,
+  signInWithGooglePopup,
+  signInWithGoogleRedirect,
   signOutUser,
   SUPER_ADMIN_EMAIL,
   verifyUserWhitelist,
@@ -82,6 +82,7 @@ export default function App() {
   const [currentUser, setCurrentUser] = useState<AuthUser | null>(null);
   const [isAuthLoading, setIsAuthLoading] = useState(true);
   const [isLoggingIn, setIsLoggingIn] = useState(false);
+  const [loginStatusText, setLoginStatusText] = useState<string>('');
   const [authError, setAuthError] = useState<AuthErrorInfo | string | null>(null);
   const [rejectedEmail, setRejectedEmail] = useState<string | null>(null);
 
@@ -111,12 +112,31 @@ export default function App() {
       setIsAuthLoading(false);
     }
 
-    // Check redirect auth result (for mobile browsers where popups were redirected)
-    checkRedirectAuth().then((redirectUser) => {
-      if (redirectUser) {
-        handlePostAuthUser(redirectUser);
-      }
-    });
+    // Check redirect auth result (for mobile/tablet browsers or redirect login)
+    checkRedirectAuth()
+      .then(async (redirectUser) => {
+        if (redirectUser) {
+          setIsLoggingIn(true);
+          setLoginStatusText('Google 리다이렉트 인증 완료, 권한 확인 중...');
+          await handlePostAuthUser(redirectUser);
+        }
+      })
+      .catch((error) => {
+        console.error('getRedirectResult error:', error);
+        const msg = error?.message || '';
+        const code = error?.code || '';
+        if (code.includes('access-denied') || msg.includes('403') || code.includes('disallowed_useragent')) {
+          setAuthError('Google 보안 정책(403 오류): 카카오톡이나 인앱 브라우저에서는 소셜 로그인이 제한됩니다. 기본 브라우저(Safari/Chrome)로 열어주세요.');
+          setIsLoginModalOpen(true);
+        } else if (code !== 'auth/popup-closed-by-user') {
+          setAuthError('Google 리다이렉트 로그인 처리 중 오류가 발생했습니다: ' + (msg || code));
+          setIsLoginModalOpen(true);
+        }
+      })
+      .finally(() => {
+        setIsLoggingIn(false);
+        setLoginStatusText('');
+      });
 
     // Listen to Firebase Auth state
     const unsubscribeAuth = onAuthStateChanged(auth, async (firebaseUser) => {
@@ -172,16 +192,22 @@ export default function App() {
     };
   }, []);
 
-  // Post-Authentication Handler with Whitelist Verification
+  // Post-Authentication Handler with Whitelist Verification (Identical to devicecare)
   const handlePostAuthUser = async (user: User) => {
     const userEmail = (user.email || '').trim().toLowerCase();
+    if (!userEmail) {
+      await signOutUser();
+      setAuthError('Google 계정에서 이메일 정보를 확인할 수 없습니다. 다시 시도해 주세요.');
+      setIsLoginModalOpen(true);
+      return;
+    }
 
     // 1. Superadmin check (averver100@gmail.com) -> Immediate Bypass!
     if (userEmail === SUPER_ADMIN_EMAIL.toLowerCase()) {
       const superAdminUser: AuthUser = {
         uid: user.uid,
         email: SUPER_ADMIN_EMAIL,
-        displayName: user.displayName || '슈퍼관리자 (교육정보부)',
+        displayName: user.displayName || '최고 관리자 (averver100)',
         photoURL: user.photoURL || undefined,
         role: 'superadmin',
         isWhitelisted: true,
@@ -193,16 +219,18 @@ export default function App() {
       setRejectedEmail(null);
       setIsLoginModalOpen(false);
       ensureSuperAdminInDb();
+      showToast('최고 관리자(averver100) 권한으로 로그인되었습니다.');
       return;
     }
 
     // 2. Standard teacher whitelist check
+    setLoginStatusText('Firestore 최신 서버 화이트리스트 인가 권한을 확인하는 중...');
     const verification = await verifyUserWhitelist(userEmail);
     if (verification.isWhitelisted) {
       const authUser: AuthUser = {
         uid: user.uid,
         email: userEmail,
-        displayName: user.displayName || verification.userData?.name || '교직원',
+        displayName: user.displayName || verification.userData?.name || userEmail.split('@')[0],
         photoURL: user.photoURL || undefined,
         role: verification.role,
         isWhitelisted: true,
@@ -213,76 +241,99 @@ export default function App() {
       setAuthError(null);
       setRejectedEmail(null);
       setIsLoginModalOpen(false);
+      showToast(`${authUser.displayName} 선생님 로그인 완료`);
     } else {
-      // 3. Rejected: Not whitelisted -> Safe block & show required message
+      // 3. Rejected: Not whitelisted -> Safe block & show exact devicecare notice
       await signOutUser();
       setCurrentUser(null);
       setRejectedEmail(userEmail);
       setIsLoginModalOpen(true);
-      setAuthError({
-        code: 'auth/not-whitelisted',
-        title: '교직원 접근 권한 인가 실패',
-        message:
-          '본 시스템은 보안 및 데이터 정합성을 위해 사전 인가된 교직원 계정만 로그인을 허용합니다. 접속이 필요하신 경우 관리자에게 계정 등록 또는 활성화를 요청하세요.',
-        isDomainError: false,
-      });
+      setAuthError(
+        `승인되지 않은 Google 계정입니다 (${userEmail}). 화이트리스트에 등록된 인가 계정으로 로그인해 주세요.`
+      );
     }
   };
 
-  // Google OAuth Login
-  const handleGoogleLogin = async () => {
+  // Google Popup Login (devicecare logic)
+  const handleGooglePopupLogin = async () => {
     setIsLoggingIn(true);
+    setLoginStatusText('Google 계정 인증 창을 여는 중...');
     setAuthError(null);
     setRejectedEmail(null);
     try {
-      const user = await signInWithGoogle();
+      const user = await signInWithGooglePopup();
       if (user) {
+        setLoginStatusText('Firestore 최신 서버 화이트리스트 인가 권한을 확인하는 중...');
         await handlePostAuthUser(user);
       }
     } catch (err: any) {
-      if (err.message === 'REDIRECT_INITIATED') {
+      console.warn('Google Popup Login Notice:', err);
+      setIsLoggingIn(false);
+      setLoginStatusText('');
+      const code = err?.code || '';
+      const msg = err?.message || '';
+      if (code === 'auth/popup-closed-by-user') {
         return;
       }
-      console.error('Login error:', err);
+      if (code === 'auth/popup-blocked') {
+        setAuthError(
+          '브라우저에서 로그인 팝업 창이 차단되었습니다. 주소창의 팝업 차단을 해제하시거나 아래 [모바일/리다이렉트 로그인]을 이용해주세요.'
+        );
+        return;
+      }
+      if (msg.includes('403') || code.includes('disallowed_useragent')) {
+        setAuthError(
+          'Google 보안 정책(403): 인앱 브라우저에서는 로그인이 제한됩니다. 기본 브라우저(Safari/Chrome)로 열어주세요.'
+        );
+        return;
+      }
       const parsed = parseAuthError(err);
-      setAuthError(parsed);
+      setAuthError(
+        parsed.message ||
+          'Google 로그인 창 연결 중 오류가 발생했습니다. 모바일 환경이거나 팝업이 차단된 경우 아래 [모바일/리다이렉트 로그인]을 이용하세요.'
+      );
     } finally {
       setIsLoggingIn(false);
+      setLoginStatusText('');
     }
   };
 
-  // Staff Email Direct Whitelist Verification
-  const handleStaffEmailLogin = async (email: string): Promise<boolean> => {
+  // Google Redirect Login (devicecare logic)
+  const handleGoogleRedirectLogin = async () => {
     setIsLoggingIn(true);
+    setLoginStatusText('Google 로그인 페이지로 이동합니다...');
     setAuthError(null);
     setRejectedEmail(null);
     try {
-      const res = await loginWithStaffEmail(email);
-      if (res.success && res.user) {
-        setCurrentUser(res.user);
-        setIsLoginModalOpen(false);
-        showToast(`${res.user.displayName}님 환영합니다.`);
-        return true;
-      } else {
-        if (res.rejectedEmail) {
-          setRejectedEmail(res.rejectedEmail);
-        }
-        if (res.error) {
-          setAuthError({
-            code: 'auth/not-whitelisted',
-            title: '교직원 접근 권한 인가 실패',
-            message: res.error,
-            isDomainError: false,
-          });
-        }
-        return false;
-      }
+      await signInWithGoogleRedirect();
     } catch (err: any) {
-      console.error('Staff email login error:', err);
-      setAuthError(parseAuthError(err));
-      return false;
-    } finally {
+      console.error('Google Redirect Login error:', err);
       setIsLoggingIn(false);
+      setLoginStatusText('');
+      const msg = err?.message || '';
+      if (msg.includes('403')) {
+        setAuthError(
+          'Google 보안 정책(403): 인앱 브라우저에서는 로그인이 제한됩니다. 기본 브라우저(Safari/Chrome)로 열어주세요.'
+        );
+      } else {
+        setAuthError(
+          'Google 리다이렉트 페이지 연결 중 오류가 발생했습니다: ' + (msg || '다시 시도해 주세요.')
+        );
+      }
+    }
+  };
+
+  // Cross-Domain srider.kr SSO Session Restoration
+  const handleCheckSSO = (): boolean => {
+    const ssoUser = checkSSORestoration();
+    if (ssoUser) {
+      setCurrentUser(ssoUser);
+      setIsLoginModalOpen(false);
+      showToast(`${ssoUser.displayName} 계정으로 통합 세션이 연결되었습니다.`);
+      return true;
+    } else {
+      setAuthError('다른 srider.kr 앱의 로그인 세션을 발견하지 못했습니다. Google 계정으로 로그인해 주세요.');
+      return false;
     }
   };
 
@@ -552,14 +603,16 @@ export default function App() {
       <LoginModal
         isOpen={isLoginModalOpen}
         onClose={() => setIsLoginModalOpen(false)}
-        onGoogleLogin={handleGoogleLogin}
-        onStaffEmailLogin={handleStaffEmailLogin}
+        onGooglePopupLogin={handleGooglePopupLogin}
+        onGoogleRedirectLogin={handleGoogleRedirectLogin}
+        onCheckSSO={handleCheckSSO}
         authError={authError}
         isLoggingIn={isLoggingIn}
-        rejectedEmail={rejectedEmail}
+        loginStatusText={loginStatusText}
         onClearErrors={() => {
           setAuthError(null);
           setRejectedEmail(null);
+          setLoginStatusText('');
         }}
       />
 

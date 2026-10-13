@@ -68,7 +68,6 @@ export function checkSSORestoration(): AuthUser | null {
   // 1. Check URL parameters (Backup recovery mechanism)
   const urlParams = new URLSearchParams(window.location.search);
   const ssoEmailParam = urlParams.get('admin_sso') || urlParams.get('sso_email') || urlParams.get('auth_email');
-  const ssoTokenParam = urlParams.get('sso_token') || urlParams.get('auth_ticket');
 
   if (ssoEmailParam && ssoEmailParam.toLowerCase() === SUPER_ADMIN_EMAIL.toLowerCase()) {
     const superAdminUser: AuthUser = {
@@ -106,7 +105,7 @@ export function checkSSORestoration(): AuthUser | null {
     // Ignore JSON parse errors
   }
 
-  // 3. Check cross-domain cookies (shared across commute, device, ttime, croom, ipass, dibeot on srider.kr)
+  // 3. Check cross-domain cookies (shared across commute, devicecare, ttime, croom, ipass, dibeot on srider.kr)
   const cookieSuperAdmin = CookieManager.get('sso_superadmin') || CookieManager.get('tab_sso_user');
   if (cookieSuperAdmin && cookieSuperAdmin.toLowerCase() === SUPER_ADMIN_EMAIL.toLowerCase()) {
     const superAdminUser: AuthUser = {
@@ -203,7 +202,6 @@ export async function verifyUserWhitelist(email: string): Promise<{
     };
   } catch (error) {
     console.error('Whitelist verification error:', error);
-    // If database read fails, fallback safe check
     return {
       isWhitelisted: false,
       role: 'guest',
@@ -212,37 +210,52 @@ export async function verifyUserWhitelist(email: string): Promise<{
 }
 
 /**
- * Initiates Google OAuth Login
- * Tries popup first; falls back to redirect on mobile or if popups are blocked
+ * Initiates Google OAuth Login via Popup
+ */
+export async function signInWithGooglePopup(): Promise<User> {
+  await setPersistence(auth, browserLocalPersistence);
+  const result = await signInWithPopup(auth, googleProvider);
+  return result.user;
+}
+
+/**
+ * Initiates Google OAuth Login via Full Page Redirect (identical to devicecare)
+ */
+export async function signInWithGoogleRedirect(): Promise<void> {
+  await setPersistence(auth, browserLocalPersistence);
+  await signInWithRedirect(auth, googleProvider);
+}
+
+/**
+ * Standard Google OAuth Login with automatic fallback
  */
 export async function signInWithGoogle(): Promise<User> {
   try {
-    await setPersistence(auth, browserLocalPersistence);
-    const result = await signInWithPopup(auth, googleProvider);
-    return result.user;
+    return await signInWithGooglePopup();
   } catch (error: any) {
-    // If popup blocked or unsupported on mobile, attempt redirect
     if (
       error?.code === 'auth/popup-blocked' ||
       error?.code === 'auth/popup-closed-by-user' ||
       error?.code === 'auth/cancelled-popup-request'
     ) {
       console.info('Switching to signInWithRedirect due to popup environment restriction');
-      await signInWithRedirect(auth, googleProvider);
-      // Flow will resume on redirect
+      await signInWithGoogleRedirect();
       throw new Error('REDIRECT_INITIATED');
     }
     throw error;
   }
 }
 
+/**
+ * Handles incoming redirect authentication result upon page reload
+ */
 export async function checkRedirectAuth(): Promise<User | null> {
   try {
     const result = await getRedirectResult(auth);
     return result ? result.user : null;
   } catch (error) {
     console.error('Redirect auth error:', error);
-    return null;
+    throw error;
   }
 }
 
@@ -274,7 +287,6 @@ export async function ensureSuperAdminInDb(): Promise<void> {
       });
     }
   } catch (error) {
-    // Non-fatal if permission rules prevent unauthed init
     console.warn('Superadmin bootstrap check notice:', error);
   }
 }
@@ -294,12 +306,13 @@ export interface AuthErrorInfo {
 
 export function parseAuthError(error: any): AuthErrorInfo {
   const code = error?.code || '';
+  const message = error?.message || '';
   const currentDomain = typeof window !== 'undefined' ? window.location.hostname : '';
   const consoleUrl = `https://console.firebase.google.com/project/gen-lang-client-0441740129/authentication/settings`;
 
   if (
     code === 'auth/unauthorized-domain' ||
-    (error?.message && error.message.includes('auth/unauthorized-domain'))
+    message.includes('auth/unauthorized-domain')
   ) {
     return {
       code: 'auth/unauthorized-domain',
@@ -317,9 +330,22 @@ export function parseAuthError(error: any): AuthErrorInfo {
     return {
       code: 'auth/popup-blocked',
       title: '브라우저 팝업 차단됨',
-      message: '브라우저에서 Google 로그인 팝업 창이 차단되었습니다.',
-      actionGuide:
-        '브라우저 주소창 우측의 팝업 차단을 해제하거나 아래 간편 직접 로그인을 이용하세요.',
+      message: '브라우저에서 로그인 팝업 창이 차단되었습니다. 주소창의 팝업 차단을 해제하시거나 아래 [모바일/리다이렉트 로그인]을 이용해주세요.',
+      actionGuide: '주소창 우측의 팝업 차단 아이콘을 눌러 허용하거나 모바일/리다이렉트 로그인을 클릭하세요.',
+      isDomainError: false,
+    };
+  }
+
+  if (
+    code.includes('access-denied') ||
+    message.includes('403') ||
+    code.includes('disallowed_useragent')
+  ) {
+    return {
+      code: 'auth/disallowed-useragent',
+      title: 'Google 인앱 브라우저 차단 (403)',
+      message: 'Google 보안 정책(403 오류): 카카오톡이나 인앱 브라우저에서는 소셜 로그인이 제한됩니다. 기본 브라우저(Safari/Chrome)로 열어주세요.',
+      actionGuide: '기본 브라우저(Safari 또는 Chrome)에서 열어 접속하세요.',
       isDomainError: false,
     };
   }
@@ -349,13 +375,13 @@ export function parseAuthError(error: any): AuthErrorInfo {
   return {
     code: code || 'unknown',
     title: '로그인 인증 오류',
-    message: error?.message || '구글 인증 처리 중 문제가 발생했습니다.',
+    message: message || '구글 인증 처리 중 문제가 발생했습니다.',
     isDomainError: false,
   };
 }
 
 /**
- * Superadmin Direct 1-Click Login (Safe bypass independent of Google OAuth domain restrictions)
+ * Superadmin Direct 1-Click Login (Internal programmatic helper)
  */
 export function loginAsSuperAdmin(): AuthUser {
   const superAdminUser: AuthUser = {
@@ -369,46 +395,4 @@ export function loginAsSuperAdmin(): AuthUser {
   saveAuthSession(superAdminUser);
   ensureSuperAdminInDb().catch(() => {});
   return superAdminUser;
-}
-
-/**
- * Staff Email Whitelist Direct Login
- */
-export async function loginWithStaffEmail(rawEmail: string): Promise<{
-  success: boolean;
-  user?: AuthUser;
-  rejectedEmail?: string;
-  error?: string;
-}> {
-  const email = (rawEmail || '').trim().toLowerCase();
-  if (!email) {
-    return { success: false, error: '이메일을 입력해주세요.' };
-  }
-
-  if (email === SUPER_ADMIN_EMAIL.toLowerCase()) {
-    const user = loginAsSuperAdmin();
-    return { success: true, user };
-  }
-
-  const verification = await verifyUserWhitelist(email);
-  if (verification.isWhitelisted) {
-    const docId = email.replace(/[^a-zA-Z0-9]/g, '_');
-    const authUser: AuthUser = {
-      uid: 'staff-' + docId,
-      email: email,
-      displayName: verification.userData?.name || '교직원',
-      role: verification.role,
-      isWhitelisted: true,
-      department: verification.userData?.department,
-    };
-    saveAuthSession(authUser);
-    return { success: true, user: authUser };
-  }
-
-  return {
-    success: false,
-    rejectedEmail: email,
-    error:
-      '본 시스템은 보안 및 데이터 정합성을 위해 사전 인가된 교직원 계정만 로그인을 허용합니다. 접속이 필요하신 경우 관리자에게 계정 등록 또는 활성화를 요청하세요.',
-  };
 }
