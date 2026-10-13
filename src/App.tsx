@@ -592,14 +592,9 @@ export default function App() {
       </main>
 
       {/* Footer */}
-      <footer className="mt-auto py-6 border-t border-slate-200 bg-white/50 text-center text-xs text-slate-400">
-        <div className="max-w-[1440px] mx-auto px-4 space-y-1">
-          <p className="font-semibold text-slate-600">
-            탭존 (TabZone) · 교내 스마트 태블릿 통합 대여 관리 시스템
-          </p>
-          <p className="text-[11px]">
-            개인정보 비수집(No PII) 원칙 준수 · Cloudflare Workers & Firebase 실시간 동기화 · tab.srider.kr
-          </p>
+      <footer className="mt-auto py-6 border-t border-slate-200 bg-white text-center text-xs text-slate-400 font-normal select-none">
+        <div className="max-w-[1440px] mx-auto px-4">
+          <p>Copyright 2026. 버버&amp;싱글라이더</p>
         </div>
       </footer>
 
