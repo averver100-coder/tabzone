@@ -34,16 +34,32 @@ function saveLocalRentals(rentals: Rental[]) {
   }
 }
 
+const rentalListeners = new Set<(rentals: Rental[]) => void>();
+
+function notifyAllRentals(rentals: Rental[]) {
+  saveLocalRentals(rentals);
+  rentalListeners.forEach((listener) => {
+    try {
+      listener(rentals);
+    } catch (e) {
+      console.error('Error notifying rental listener:', e);
+    }
+  });
+}
+
 /**
  * Subscribe to all rentals in real-time with local storage fallback
  */
 export function subscribeToRentals(
   callback: (rentals: Rental[]) => void
 ): () => void {
+  rentalListeners.add(callback);
+
   // 1. Immediately emit local cached rentals
   callback(getLocalRentals());
 
   // 2. Real-time Firestore subscription
+  let unsubscribeFirestore = () => {};
   try {
     const q = query(
       collection(db, RENTALS_COLLECTION),
@@ -51,27 +67,46 @@ export function subscribeToRentals(
       limit(200)
     );
 
-    const unsubscribe = onSnapshot(
+    unsubscribeFirestore = onSnapshot(
       q,
       (snapshot) => {
-        const rentals: Rental[] = [];
+        const firestoreMap = new Map<string, Rental>();
         snapshot.forEach((docSnap) => {
-          rentals.push(docSnap.data() as Rental);
+          const item = docSnap.data() as Rental;
+          if (item && item.id) {
+            firestoreMap.set(item.id, item);
+          }
         });
-        saveLocalRentals(rentals);
-        callback(rentals);
+
+        // Merge with local cached rentals so that freshly created offline/optimistic items are preserved
+        const localList = getLocalRentals();
+        localList.forEach((r) => {
+          if (!firestoreMap.has(r.id)) {
+            firestoreMap.set(r.id, r);
+          }
+        });
+
+        const merged = Array.from(firestoreMap.values()).sort((a, b) => {
+          const tA = new Date(a.createdAt).getTime() || 0;
+          const tB = new Date(b.createdAt).getTime() || 0;
+          return tB - tA;
+        });
+
+        notifyAllRentals(merged);
       },
       (error) => {
         console.warn('Firestore rentals subscription notice, using local cache:', error);
-        callback(getLocalRentals());
+        notifyAllRentals(getLocalRentals());
       }
     );
-
-    return unsubscribe;
   } catch (err) {
     console.warn('Failed to attach rentals listener, using local cache:', err);
-    return () => {};
   }
+
+  return () => {
+    rentalListeners.delete(callback);
+    unsubscribeFirestore();
+  };
 }
 
 /**
@@ -169,15 +204,15 @@ export async function createRental(
     createdByEmail: operator.email,
   };
 
-  // Immediate local cache update
+  // Immediate local cache update and broadcast
   const localList = getLocalRentals();
-  localList.unshift(newRental);
-  saveLocalRentals(localList);
+  const updatedList = [newRental, ...localList.filter((r) => r.id !== newRental.id)];
+  notifyAllRentals(updatedList);
 
   try {
     await setDoc(docRef, newRental);
   } catch (error) {
-    console.warn('Firestore setDoc notice for rental, saved locally:', error);
+    console.error('Firestore setDoc notice for rental, preserved locally:', error);
   }
 
   await createAuditLog(
@@ -206,7 +241,7 @@ export async function returnRental(
   const returnApprover = (returnData?.returnApprover || rental.approver || '').trim();
   const returnNotes = (returnData?.returnNotes || '').trim() || null;
 
-  // Local update
+  // Local update and broadcast
   const localList = getLocalRentals().map((r) =>
     r.id === rental.id
       ? {
@@ -219,7 +254,7 @@ export async function returnRental(
         }
       : r
   );
-  saveLocalRentals(localList);
+  notifyAllRentals(localList);
 
   try {
     await updateDoc(docRef, {

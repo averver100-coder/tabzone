@@ -3,6 +3,7 @@ import {
   Archive,
   ArrowRight,
   BatteryCharging,
+  Calendar,
   CheckCircle,
   HelpCircle,
   Info,
@@ -11,7 +12,7 @@ import {
   Tablet,
 } from 'lucide-react';
 import React from 'react';
-import { CartCapacity, CartType, Rental } from '../types';
+import { CartCapacity, CartType } from '../types';
 
 interface DashboardStatusProps {
   cartA: CartCapacity;

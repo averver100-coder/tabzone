@@ -14,8 +14,8 @@ service cloud.firestore {
         && request.resource.data.quantity >= 1
         && request.resource.data.quantity <= 30
         && request.resource.data.status in ['대여 중', '반납 완료']
-        && request.resource.data.cartUsed in ['A보관함', 'B보관함'];
-      allow update: if request.resource.data.status in ['대여 중', '반납 완료'];
+        && request.resource.data.cartUsed is string;
+      allow update: if isValidId(rentalId);
       allow delete: if true;
     }
 

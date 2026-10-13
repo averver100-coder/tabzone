@@ -369,6 +369,7 @@ export default function App() {
         : { uid: 'kiosk-student-rep', email: 'kiosk@tab.srider.kr' };
 
       const newRental = await createRental(operator, data);
+      setRentals((prev) => [newRental, ...prev.filter((r) => r.id !== newRental.id)]);
       showToast(
         `✅ ${data.teacherName} (${data.gradeClass}) ${data.cartUsed} ${data.quantity}대 대여가 완료되었습니다!`
       );
@@ -392,6 +393,19 @@ export default function App() {
         : { uid: 'kiosk-return', email: 'return@tab.srider.kr' };
 
       await returnRental(operator, rental, returnData);
+      setRentals((prev) =>
+        prev.map((r) =>
+          r.id === rental.id
+            ? {
+                ...r,
+                status: '반납 완료',
+                returnedAt: new Date().toISOString(),
+                returnApprover: returnData.returnApprover,
+                returnNotes: returnData.returnNotes,
+              }
+            : r
+        )
+      );
       const notePreview = returnData.returnNotes ? ` [비고: ${returnData.returnNotes}]` : '';
       showToast(
         `📦 ${rental.teacherName} (${rental.gradeClass}) ${rental.cartUsed} ${rental.quantity}대 반납이 완료되었습니다. (반납승인: ${returnData.returnApprover})${notePreview}`
