@@ -88,14 +88,8 @@ export const LoginModal: React.FC<LoginModalProps> = ({
   };
 
   return (
-    <div
-      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/75 animate-in fade-in"
-      style={{ WebkitBackfaceVisibility: 'hidden', backfaceVisibility: 'hidden' }}
-    >
-      <div
-        className="w-full max-w-md bg-white rounded-3xl shadow-2xl overflow-hidden border border-slate-200/90 relative animate-in zoom-in-95 duration-200"
-        style={{ transform: 'translateZ(0)', WebkitTransform: 'translateZ(0)' }}
-      >
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 overflow-hidden">
+      <div className="w-full max-w-md bg-white rounded-3xl shadow-2xl overflow-hidden border border-slate-200/90 relative">
         {/* Top Close Button */}
         <button
           type="button"

@@ -17,7 +17,7 @@ import {
   Users,
   X,
 } from 'lucide-react';
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { Approver, CartCapacity, CartType, Teacher } from '../types';
 
 interface RentalFormModalProps {
@@ -129,6 +129,18 @@ export const RentalFormModal: React.FC<RentalFormModalProps> = ({
     });
   };
 
+  const uniqueTeachers = useMemo(() => {
+    return Array.from(
+      new Map(teachers.map((t) => [`${t.name?.trim()}__${t.subject?.trim()}`, t])).values()
+    );
+  }, [teachers]);
+
+  const uniqueApprovers = useMemo(() => {
+    return Array.from(
+      new Map(approvers.map((a) => [`${a.name?.trim()}__${a.position?.trim()}`, a])).values()
+    );
+  }, [approvers]);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     const missing: string[] = [];
@@ -188,8 +200,7 @@ export const RentalFormModal: React.FC<RentalFormModalProps> = ({
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-5 bg-slate-950/75 animate-in fade-in duration-150 overflow-y-auto"
-      style={{ WebkitBackfaceVisibility: 'hidden', backfaceVisibility: 'hidden' }}
+      className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-5 bg-black/50 overflow-hidden"
       onClick={(e) => {
         if (e.target === e.currentTarget && !isSubmitting) {
           onClose();
@@ -197,8 +208,7 @@ export const RentalFormModal: React.FC<RentalFormModalProps> = ({
       }}
     >
       <div
-        className="w-full max-w-5xl bg-white rounded-3xl shadow-2xl border border-slate-200 overflow-hidden my-auto max-h-[94vh] flex flex-col"
-        style={{ transform: 'translateZ(0)', WebkitTransform: 'translateZ(0)' }}
+        className="w-full max-w-5xl bg-white rounded-3xl shadow-2xl border border-slate-200 overflow-hidden my-auto max-h-[92vh] flex flex-col"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Modal Header */}
@@ -545,9 +555,7 @@ export const RentalFormModal: React.FC<RentalFormModalProps> = ({
                     <option value="">
                       {teachers.length > 0 ? '담당 교사 선택' : '교사 미등록'}
                     </option>
-                    {Array.from(
-                      new Map(teachers.map((t) => [`${t.name?.trim()}__${t.subject?.trim()}`, t])).values()
-                    ).map((t) => (
+                    {uniqueTeachers.map((t) => (
                       <option key={t.id} value={`${t.name} (${t.subject})`} className="text-slate-800">
                         {t.name} ({t.subject})
                       </option>
@@ -569,9 +577,7 @@ export const RentalFormModal: React.FC<RentalFormModalProps> = ({
                     autoComplete="off"
                     autoCorrect="off"
                     spellCheck={false}
-                    className={`w-full h-13 px-4 rounded-2xl border bg-white text-sm sm:text-base text-slate-900 focus:ring-4 focus:ring-blue-100 shadow-xs ${
-                      !studentRep.trim() ? 'border-slate-300' : 'border-blue-500 font-bold'
-                    }`}
+                    className="w-full h-13 px-4 rounded-2xl border border-slate-300 focus:border-blue-500 focus:ring-4 focus:ring-blue-100 bg-white text-sm sm:text-base text-slate-900 shadow-xs outline-none font-bold"
                   />
                 </div>
               </div>
@@ -591,9 +597,7 @@ export const RentalFormModal: React.FC<RentalFormModalProps> = ({
                   </div>
                 ) : (
                   <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
-                    {Array.from(
-                      new Map(approvers.map((a) => [`${a.name?.trim()}__${a.position?.trim()}`, a])).values()
-                    ).map((appr) => {
+                    {uniqueApprovers.map((appr) => {
                       const labelText = `${appr.name} (${appr.position})`;
                       const isSelected = approver === labelText;
 

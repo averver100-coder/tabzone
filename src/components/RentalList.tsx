@@ -99,9 +99,6 @@ export const RentalList: React.FC<RentalListProps> = ({
               </span>
             )}
           </h2>
-          <p className="text-xs sm:text-sm text-slate-500 mt-0.5 font-medium">
-            실시간 클라우드 동기화 · 대여/반납 승인자 개별 기록 및 특이사항 메모 관리
-          </p>
         </div>
 
         {/* Tab Switcher */}

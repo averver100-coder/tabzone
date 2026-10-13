@@ -204,14 +204,8 @@ export const WhitelistModal: React.FC<WhitelistModalProps> = ({
   };
 
   return (
-    <div
-      className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-5 bg-slate-950/75 animate-in fade-in duration-150 overflow-y-auto"
-      style={{ WebkitBackfaceVisibility: 'hidden', backfaceVisibility: 'hidden' }}
-    >
-      <div
-        className="w-full max-w-4xl bg-white rounded-3xl shadow-2xl border border-slate-200 overflow-hidden my-auto max-h-[92vh] flex flex-col"
-        style={{ transform: 'translateZ(0)', WebkitTransform: 'translateZ(0)' }}
-      >
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-5 bg-black/50 overflow-hidden">
+      <div className="w-full max-w-4xl bg-white rounded-3xl shadow-2xl border border-slate-200 overflow-hidden my-auto max-h-[92vh] flex flex-col">
         {/* Modal Top Header */}
         <div className="px-6 sm:px-7 py-4.5 bg-gradient-to-r from-purple-800 via-indigo-800 to-blue-800 text-white flex items-center justify-between shrink-0">
           <div className="flex items-center gap-3.5">

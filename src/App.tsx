@@ -550,9 +550,6 @@ export default function App() {
             <div>
               <div className="text-base sm:text-lg font-black text-slate-900 flex flex-wrap items-center gap-2">
                 <span className="whitespace-nowrap">교내 스마트 태블릿 현황판</span>
-                <span className="text-xs font-bold px-2.5 py-0.5 rounded-full bg-blue-50 text-blue-700 border border-blue-200 whitespace-nowrap">
-                  총 60대 운용 (보관함 1: 30대 / 보관함 2: 30대)
-                </span>
                 <span className="text-xs font-bold px-2.5 py-0.5 rounded-full bg-slate-100 text-slate-700 whitespace-nowrap">
                   대여 가능: <strong className="text-blue-600">{totalAvailable}대</strong>
                 </span>

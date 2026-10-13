@@ -1,13 +1,6 @@
 import {
   AlertTriangle,
-  Archive,
   ArrowRight,
-  BatteryCharging,
-  Calendar,
-  CheckCircle,
-  HelpCircle,
-  Info,
-  Layers,
   Sparkles,
   Tablet,
 } from 'lucide-react';
@@ -89,7 +82,6 @@ export const DashboardStatus: React.FC<DashboardStatusProps> = ({
                 <h3 className="text-xl font-black text-slate-900 whitespace-nowrap">
                   보관함 1
                 </h3>
-                <p className="text-xs sm:text-sm text-slate-500 font-medium mt-0.5">총 30대 규격 배치</p>
               </div>
             </div>
 
@@ -135,14 +127,6 @@ export const DashboardStatus: React.FC<DashboardStatusProps> = ({
               />
             </div>
           </div>
-
-          <div className="mt-4 pt-3 border-t border-slate-100 flex items-center justify-between text-xs sm:text-sm text-slate-500 font-medium">
-            <span className="flex items-center gap-1.5 text-blue-700 font-semibold">
-              <BatteryCharging className="w-4 h-4 text-blue-500" />
-              충전 및 보안 락 정상
-            </span>
-            <span className="font-bold text-slate-700">대여 중: {cartA.rented}대</span>
-          </div>
         </div>
 
         {/* Cart 2 Card */}
@@ -170,7 +154,6 @@ export const DashboardStatus: React.FC<DashboardStatusProps> = ({
                 <h3 className="text-xl font-black text-slate-900 whitespace-nowrap">
                   보관함 2
                 </h3>
-                <p className="text-xs sm:text-sm text-slate-500 font-medium mt-0.5">총 30대 규격 배치</p>
               </div>
             </div>
 
@@ -215,14 +198,6 @@ export const DashboardStatus: React.FC<DashboardStatusProps> = ({
                 style={{ width: `${percentB}%` }}
               />
             </div>
-          </div>
-
-          <div className="mt-4 pt-3 border-t border-slate-100 flex items-center justify-between text-xs sm:text-sm text-slate-500 font-medium">
-            <span className="flex items-center gap-1.5 text-emerald-700 font-semibold">
-              <BatteryCharging className="w-4 h-4 text-emerald-500" />
-              충전 및 보안 락 정상
-            </span>
-            <span className="font-bold text-slate-700">대여 중: {cartB.rented}대</span>
           </div>
         </div>
 

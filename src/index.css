@@ -2,19 +2,16 @@
 
 @layer base {
   html, body {
+    background-color: #f8fafc;
+    color: #0f172a;
     touch-action: manipulation;
     -webkit-tap-highlight-color: transparent;
     user-select: none;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
   }
+
   input, textarea, select {
     user-select: auto;
-    -webkit-transform: translateZ(0);
-    transform: translateZ(0);
-  }
-  /* Prevent Android Chromium GPU layer dropping and black flashing during input focus/IME typing */
-  .fixed {
-    -webkit-backface-visibility: hidden;
-    backface-visibility: hidden;
   }
 }
-

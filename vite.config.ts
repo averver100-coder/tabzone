@@ -10,16 +10,18 @@ export default defineConfig(() => {
       react(),
       tailwindcss(),
       VitePWA({
-        registerType: 'prompt',
-        includeAssets: ['favicon.ico', 'apple-touch-icon.png', 'icon.svg'],
+        registerType: 'autoUpdate',
+        injectRegister: 'auto',
+        includeAssets: ['favicon.ico', 'apple-touch-icon.png', 'icon.svg', 'pwa-192x192.png', 'pwa-512x512.png'],
         manifest: {
           id: '/',
           name: '탭존 (TabZone) - 스마트 태블릿 대여 관리',
           short_name: '탭존',
           description: '학교 현장을 위한 스마트 태블릿 대여 및 반납 관리 시스템 (tab.srider.kr)',
           theme_color: '#1e3a8a',
-          background_color: '#f8fafc',
+          background_color: '#ffffff',
           display: 'standalone',
+          orientation: 'any',
           start_url: '/',
           scope: '/',
           icons: [
@@ -46,6 +48,7 @@ export default defineConfig(() => {
         workbox: {
           cleanupOutdatedCaches: true,
           clientsClaim: true,
+          skipWaiting: true,
           globPatterns: ['**/*.{js,css,html,ico,png,svg,woff,woff2}'],
         },
         devOptions: {
