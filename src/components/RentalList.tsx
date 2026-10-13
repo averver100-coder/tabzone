@@ -6,37 +6,43 @@ import {
   CheckCircle,
   CheckCircle2,
   Clock,
+  FileText,
   Filter,
   Layers,
   Loader2,
   RotateCcw,
   Search,
+  ShieldCheck,
   Tablet,
   User,
   Users,
 } from 'lucide-react';
 import React, { useState } from 'react';
-import { CartType, Rental } from '../types';
+import { Approver, CartType, Rental } from '../types';
+import { ReturnConfirmModal } from './ReturnConfirmModal';
 
 interface RentalListProps {
   rentals: Rental[];
+  approvers: Approver[];
   isPast1630: boolean;
-  onReturn: (rental: Rental) => Promise<void>;
+  onReturn: (
+    rental: Rental,
+    returnData: { returnApprover: string; returnNotes: string }
+  ) => Promise<void>;
   returningId: string | null;
 }
 
 export const RentalList: React.FC<RentalListProps> = ({
   rentals,
+  approvers,
   isPast1630,
   onReturn,
   returningId,
 }) => {
   const [activeTab, setActiveTab] = useState<'active' | 'returned' | 'all'>('active');
-  const [filterCart, setFilterCart] = useState<'ALL' | CartType>('ALL');
+  const [filterCart, setFilterCart] = useState<'ALL' | '보관함 1' | '보관함 2'>('ALL');
   const [searchQuery, setSearchQuery] = useState('');
-
-  // Determine today's date in local time string YYYY-MM-DD
-  const todayStr = new Date().toISOString().split('T')[0];
+  const [returnTargetRental, setReturnTargetRental] = useState<Rental | null>(null);
 
   const filteredRentals = rentals.filter((rental) => {
     // Tab filter
@@ -44,16 +50,23 @@ export const RentalList: React.FC<RentalListProps> = ({
     if (activeTab === 'returned' && rental.status !== '반납 완료') return false;
 
     // Cart filter
-    if (filterCart !== 'ALL' && rental.cartUsed !== filterCart) return false;
+    if (filterCart !== 'ALL') {
+      const isCart1 = rental.cartUsed === '보관함 1' || rental.cartUsed === 'A보관함';
+      if (filterCart === '보관함 1' && !isCart1) return false;
+      if (filterCart === '보관함 2' && isCart1) return false;
+    }
 
-    // Search query (teacher, gradeClass, period, rep)
+    // Search query (teacher, gradeClass, period, rep, approver, returnApprover, returnNotes)
     if (searchQuery.trim()) {
       const q = searchQuery.toLowerCase();
       const match =
         rental.teacherName.toLowerCase().includes(q) ||
         rental.gradeClass.toLowerCase().includes(q) ||
         rental.period.toLowerCase().includes(q) ||
-        rental.studentRep.toLowerCase().includes(q);
+        rental.studentRep.toLowerCase().includes(q) ||
+        rental.approver.toLowerCase().includes(q) ||
+        (rental.returnApprover && rental.returnApprover.toLowerCase().includes(q)) ||
+        (rental.returnNotes && rental.returnNotes.toLowerCase().includes(q));
       if (!match) return false;
     }
 
@@ -63,6 +76,16 @@ export const RentalList: React.FC<RentalListProps> = ({
   const activeRentalsCount = rentals.filter((r) => r.status === '대여 중').length;
   const returnedRentalsCount = rentals.filter((r) => r.status === '반납 완료').length;
 
+  const formatCompactDateTime = (isoString?: string | null) => {
+    if (!isoString) return '';
+    const d = new Date(isoString);
+    const m = d.getMonth() + 1;
+    const day = d.getDate();
+    const h = String(d.getHours()).padStart(2, '0');
+    const min = String(d.getMinutes()).padStart(2, '0');
+    return `${m}.${day} ${h}:${min}`;
+  };
+
   return (
     <div className="bg-white rounded-3xl shadow-sm border border-slate-200 overflow-hidden">
       {/* List Header & Tabs (Galaxy Tab S6 Lite Landscape Tablet Optimized) */}
@@ -71,22 +94,22 @@ export const RentalList: React.FC<RentalListProps> = ({
           <h2 className="text-xl font-black text-slate-900 flex items-center gap-2.5">
             <span>태블릿 대여 및 반납 현황</span>
             {isPast1630 && activeRentalsCount > 0 && (
-              <span className="px-3 py-1 rounded-full bg-rose-100 text-rose-700 text-xs font-black border border-rose-200 animate-pulse">
+              <span className="px-3 py-1 rounded-full bg-rose-100 text-rose-700 text-xs font-black border border-rose-200 animate-pulse whitespace-nowrap">
                 16:30 일과 후 미반납 확인 필요
               </span>
             )}
           </h2>
           <p className="text-xs sm:text-sm text-slate-500 mt-0.5 font-medium">
-            실시간 클라우드 동기화 · 대여 상태 변경 시 보관함 잔여 수량 즉시 복구
+            실시간 클라우드 동기화 · 대여/반납 승인자 개별 기록 및 특이사항 메모 관리
           </p>
         </div>
 
-        {/* Tab Switcher (Touch Pills: Height 48px / 12) */}
-        <div className="flex items-center gap-2 p-1.5 bg-slate-100/90 rounded-2xl border border-slate-200 select-none">
+        {/* Tab Switcher */}
+        <div className="flex items-center gap-2 p-1.5 bg-slate-100/90 rounded-2xl border border-slate-200 select-none shrink-0">
           <button
             type="button"
             onClick={() => setActiveTab('active')}
-            className={`h-11 sm:h-12 px-4 sm:px-5 rounded-xl text-xs sm:text-sm font-black transition active:scale-95 cursor-pointer flex items-center gap-2 ${
+            className={`h-11 sm:h-12 px-4 sm:px-5 rounded-xl text-xs sm:text-sm font-black transition active:scale-95 cursor-pointer flex items-center gap-2 whitespace-nowrap ${
               activeTab === 'active'
                 ? 'bg-blue-600 text-white shadow-sm'
                 : 'text-slate-600 hover:text-slate-900'
@@ -105,7 +128,7 @@ export const RentalList: React.FC<RentalListProps> = ({
           <button
             type="button"
             onClick={() => setActiveTab('returned')}
-            className={`h-11 sm:h-12 px-4 sm:px-5 rounded-xl text-xs sm:text-sm font-black transition active:scale-95 cursor-pointer flex items-center gap-2 ${
+            className={`h-11 sm:h-12 px-4 sm:px-5 rounded-xl text-xs sm:text-sm font-black transition active:scale-95 cursor-pointer flex items-center gap-2 whitespace-nowrap ${
               activeTab === 'returned'
                 ? 'bg-slate-800 text-white shadow-sm'
                 : 'text-slate-600 hover:text-slate-900'
@@ -124,7 +147,7 @@ export const RentalList: React.FC<RentalListProps> = ({
           <button
             type="button"
             onClick={() => setActiveTab('all')}
-            className={`h-11 sm:h-12 px-4 sm:px-5 rounded-xl text-xs sm:text-sm font-black transition active:scale-95 cursor-pointer ${
+            className={`h-11 sm:h-12 px-4 sm:px-5 rounded-xl text-xs sm:text-sm font-black transition active:scale-95 cursor-pointer whitespace-nowrap ${
               activeTab === 'all'
                 ? 'bg-slate-800 text-white shadow-sm'
                 : 'text-slate-600 hover:text-slate-900'
@@ -135,33 +158,33 @@ export const RentalList: React.FC<RentalListProps> = ({
         </div>
       </div>
 
-      {/* Filter and Search Bar (Tablet Touch Enhanced) */}
+      {/* Filter and Search Bar */}
       <div className="px-4 sm:px-5 py-3.5 bg-slate-50/70 border-b border-slate-100 flex flex-wrap items-center justify-between gap-3 text-xs sm:text-sm">
         <div className="flex items-center gap-2 flex-1 max-w-md">
           <div className="relative w-full">
             <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
             <input
               type="text"
-              placeholder="교사명, 학년반, 교시, 학생대표 검색..."
+              placeholder="교사명, 학년반, 승인자, 특이사항(미반납) 검색..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full h-12 pl-10 pr-4 rounded-2xl border border-slate-200 bg-white text-sm font-medium text-slate-800 focus:outline-none focus:border-blue-500 shadow-xs"
+              className="w-full h-11 pl-10 pr-4 rounded-2xl border border-slate-200 bg-white text-sm font-medium text-slate-800 focus:outline-none focus:border-blue-500 shadow-xs"
             />
           </div>
         </div>
 
-        {/* Storage filter buttons (Large touch pills) */}
-        <div className="flex items-center gap-2 select-none">
-          <span className="text-slate-500 font-bold flex items-center gap-1.5 text-xs sm:text-sm">
+        {/* Storage filter buttons */}
+        <div className="flex items-center gap-2 select-none shrink-0">
+          <span className="text-slate-500 font-bold flex items-center gap-1.5 text-xs sm:text-sm whitespace-nowrap">
             <Filter className="w-3.5 h-3.5" />
             보관함:
           </span>
-          {(['ALL', 'A보관함', 'B보관함'] as const).map((cart) => (
+          {(['ALL', '보관함 1', '보관함 2'] as const).map((cart) => (
             <button
               key={cart}
               type="button"
               onClick={() => setFilterCart(cart)}
-              className={`h-11 px-4 rounded-xl text-xs sm:text-sm font-black transition active:scale-95 cursor-pointer ${
+              className={`h-10 sm:h-11 px-3.5 sm:px-4 rounded-xl text-xs sm:text-sm font-black transition active:scale-95 cursor-pointer whitespace-nowrap ${
                 filterCart === cart
                   ? 'bg-blue-600 text-white shadow-xs'
                   : 'bg-white border border-slate-200 text-slate-700 hover:bg-slate-100'
@@ -173,7 +196,7 @@ export const RentalList: React.FC<RentalListProps> = ({
         </div>
       </div>
 
-      {/* Rentals List Content */}
+      {/* Rentals List Content - Structured single-row presentation */}
       <div className="divide-y divide-slate-100">
         {filteredRentals.length === 0 ? (
           <div className="py-16 text-center text-slate-400">
@@ -188,131 +211,161 @@ export const RentalList: React.FC<RentalListProps> = ({
         ) : (
           filteredRentals.map((rental) => {
             const isOverdue = isPast1630 && rental.status === '대여 중';
-            const isA = rental.cartUsed === 'A보관함';
-            const createdTime = new Date(rental.createdAt).toLocaleTimeString('ko-KR', {
-              hour: '2-digit',
-              minute: '2-digit',
-            });
-            const createdDate = new Date(rental.createdAt).toLocaleDateString('ko-KR', {
-              month: 'numeric',
-              day: 'numeric',
-            });
-            const returnedTime = rental.returnedAt
-              ? new Date(rental.returnedAt).toLocaleTimeString('ko-KR', {
-                  hour: '2-digit',
-                  minute: '2-digit',
-                })
-              : null;
+            const isCart1 = rental.cartUsed === '보관함 1' || rental.cartUsed === 'A보관함';
+            const cartDisplay = isCart1 ? '보관함 1' : '보관함 2';
+            const cartNum = isCart1 ? '1' : '2';
+
+            const createdFormatted = formatCompactDateTime(rental.createdAt);
+            const returnedFormatted = formatCompactDateTime(rental.returnedAt);
+
+            // Check if return notes indicate missing device or alert
+            const hasReturnNotes = Boolean(rental.returnNotes && rental.returnNotes.trim());
+            const isNotesWarning =
+              hasReturnNotes &&
+              (rental.returnNotes!.includes('미반납') ||
+                rental.returnNotes!.includes('분실') ||
+                rental.returnNotes!.includes('파손') ||
+                rental.returnNotes!.includes('불량'));
 
             return (
               <div
                 key={rental.id}
-                className={`p-4 sm:p-5 transition-colors flex flex-col md:flex-row md:items-center justify-between gap-4 ${
+                className={`p-3.5 sm:p-4.5 transition-colors flex flex-col xl:flex-row xl:items-center justify-between gap-3 ${
                   isOverdue
                     ? 'bg-rose-50/60 border-l-4 border-rose-500'
                     : rental.status === '대여 중'
                     ? 'hover:bg-slate-50/80 bg-white'
+                    : isNotesWarning
+                    ? 'bg-amber-50/40 border-l-4 border-amber-400'
                     : 'bg-slate-50/30 text-slate-600'
                 }`}
               >
-                {/* Left: Cart Badge & Details */}
-                <div className="flex items-start sm:items-center gap-3.5">
-                  {/* Cart Visual Avatar */}
+                {/* Main Single-line Content Stream */}
+                <div className="flex items-center gap-3 flex-1 min-w-0">
+                  {/* Cart Avatar Number 1 or 2 */}
                   <div
-                    className={`w-12 h-12 rounded-2xl flex items-center justify-center font-black text-xl shrink-0 shadow-xs border ${
-                      isA
+                    className={`w-10 h-10 sm:w-11 sm:h-11 rounded-2xl flex items-center justify-center font-black text-lg shrink-0 shadow-xs border ${
+                      isCart1
                         ? 'bg-blue-50 text-blue-600 border-blue-200'
                         : 'bg-emerald-50 text-emerald-600 border-emerald-200'
                     }`}
                   >
-                    {isA ? 'A' : 'B'}
+                    {cartNum}
                   </div>
 
-                  {/* Main Info */}
-                  <div className="space-y-1">
-                    <div className="flex flex-wrap items-center gap-2">
-                      <span className="text-base font-black text-slate-900">
-                        {rental.teacherName} 선생님
-                      </span>
-                      <span className="px-2 py-0.5 rounded-md bg-slate-100 text-slate-800 text-xs font-bold border border-slate-200">
-                        {rental.gradeClass}
-                      </span>
-                      <span className="px-2 py-0.5 rounded-md bg-blue-50 text-blue-700 text-xs font-bold border border-blue-200">
-                        {rental.period}
-                      </span>
-                      <span
-                        className={`px-2 py-0.5 rounded-md text-xs font-bold border ${
-                          isA
-                            ? 'bg-blue-50 text-blue-700 border-blue-200'
-                            : 'bg-emerald-50 text-emerald-700 border-emerald-200'
-                        }`}
-                      >
-                        {rental.cartUsed} ({rental.quantity}대)
-                      </span>
-                    </div>
+                  {/* Information Row: Fully unified with whitespace-nowrap on all elements */}
+                  <div className="flex flex-wrap items-center gap-x-2.5 gap-y-1.5 min-w-0 flex-1 text-xs sm:text-sm">
+                    {/* Teacher & Class & Cart info */}
+                    <span className="font-black text-slate-900 text-sm sm:text-base whitespace-nowrap">
+                      {rental.teacherName} 선생님
+                    </span>
+                    <span className="px-2 py-0.5 rounded-md bg-slate-100 text-slate-800 text-xs font-bold border border-slate-200 whitespace-nowrap">
+                      {rental.gradeClass}
+                    </span>
+                    <span className="px-2 py-0.5 rounded-md bg-blue-50 text-blue-700 text-xs font-bold border border-blue-200 whitespace-nowrap">
+                      {rental.period}
+                    </span>
+                    <span
+                      className={`px-2.5 py-0.5 rounded-md text-xs font-bold border whitespace-nowrap ${
+                        isCart1
+                          ? 'bg-blue-50 text-blue-700 border-blue-200'
+                          : 'bg-emerald-50 text-emerald-700 border-emerald-200'
+                      }`}
+                    >
+                      {cartDisplay} · {rental.quantity}대
+                    </span>
 
-                    <div className="flex flex-wrap items-center gap-y-1 gap-x-3 text-xs text-slate-500 font-medium">
-                      <span className="flex items-center gap-1">
-                        <Clock className="w-3.5 h-3.5 text-slate-400" />
-                        대여: {createdDate} {createdTime}
+                    {/* Date and Time (Guaranteed non-clipped font-mono) */}
+                    <div className="flex items-center gap-1.5 text-xs font-mono font-bold text-slate-600 shrink-0 whitespace-nowrap">
+                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-slate-100 text-slate-700 border border-slate-200">
+                        <Clock className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+                        <span>대여 {createdFormatted}</span>
                       </span>
-                      {returnedTime && (
-                        <span className="flex items-center gap-1 text-emerald-700 font-bold">
-                          <CheckCircle2 className="w-3.5 h-3.5" />
-                          반납: {returnedTime}
+                      {returnedFormatted && (
+                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-emerald-50 text-emerald-800 border border-emerald-200 font-bold">
+                          <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+                          <span>반납 {returnedFormatted}</span>
                         </span>
                       )}
-                      <span className="flex items-center gap-1">
-                        <User className="w-3.5 h-3.5 text-slate-400" />
-                        수령메모: {rental.studentRep}
-                      </span>
-                      <span className="text-slate-400">· 승인: {rental.approver}</span>
                     </div>
+
+                    {/* Approvers & Student Rep */}
+                    <div className="flex items-center gap-1.5 text-xs font-bold shrink-0 whitespace-nowrap">
+                      {rental.studentRep && (
+                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-slate-100 text-slate-600 border border-slate-200">
+                          <User className="w-3 h-3 text-slate-400 shrink-0" />
+                          <span>수령: {rental.studentRep}</span>
+                        </span>
+                      )}
+                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-purple-50 text-purple-800 border border-purple-200">
+                        <ShieldCheck className="w-3 h-3 text-purple-600 shrink-0" />
+                        <span>대여승인: {rental.approver}</span>
+                      </span>
+                      {rental.status === '반납 완료' && (
+                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-emerald-50 text-emerald-800 border border-emerald-200">
+                          <RotateCcw className="w-3 h-3 text-emerald-600 shrink-0" />
+                          <span>반납승인: {rental.returnApprover || rental.approver}</span>
+                        </span>
+                      )}
+                    </div>
+
+                    {/* Return Notes Badge if any */}
+                    {hasReturnNotes && (
+                      <span
+                        className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-md text-xs font-bold border whitespace-nowrap ${
+                          isNotesWarning
+                            ? 'bg-amber-100 text-amber-950 border-amber-300'
+                            : 'bg-slate-100 text-slate-800 border-slate-200'
+                        }`}
+                      >
+                        {isNotesWarning ? (
+                          <AlertTriangle className="w-3.5 h-3.5 text-amber-600 shrink-0" />
+                        ) : (
+                          <FileText className="w-3.5 h-3.5 text-slate-500 shrink-0" />
+                        )}
+                        <span>비고: {rental.returnNotes}</span>
+                      </span>
+                    )}
                   </div>
                 </div>
 
-                {/* Right: Status Pill & One-Click Return Action */}
-                <div className="flex items-center justify-between md:justify-end gap-3.5 shrink-0 pt-2.5 md:pt-0 border-t md:border-t-0 border-slate-100">
-                  {/* Status Indicator */}
+                {/* Right: Status Pill & Action Button */}
+                <div className="flex items-center justify-end gap-2.5 shrink-0 pt-2 xl:pt-0 border-t xl:border-t-0 border-slate-100 whitespace-nowrap">
                   {rental.status === '대여 중' ? (
-                    <div className="flex items-center gap-2">
+                    <>
                       {isOverdue && (
-                        <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-rose-600 text-white text-xs font-black shadow-xs animate-pulse">
-                          <AlertTriangle className="w-4 h-4" />
-                          16:30 초과 미반납
+                        <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-rose-600 text-white text-xs font-black shadow-xs animate-pulse">
+                          <AlertTriangle className="w-3.5 h-3.5 shrink-0" />
+                          <span>16:30 초과</span>
                         </span>
                       )}
-                      <span className="px-3.5 py-1.5 rounded-full bg-amber-100 text-amber-900 text-xs sm:text-sm font-black border border-amber-300 shadow-xs">
+                      <span className="px-3 py-1 rounded-full bg-amber-100 text-amber-900 text-xs font-black border border-amber-300 shadow-xs">
                         대여 중 ({rental.quantity}대)
                       </span>
-                    </div>
+                      <button
+                        type="button"
+                        disabled={returningId === rental.id}
+                        onClick={() => setReturnTargetRental(rental)}
+                        className="h-10 sm:h-11 px-4 sm:px-5 rounded-xl bg-emerald-600 hover:bg-emerald-500 active:scale-95 disabled:bg-slate-300 text-white text-xs sm:text-sm font-black shadow-md shadow-emerald-600/20 flex items-center gap-1.5 transition cursor-pointer"
+                      >
+                        {returningId === rental.id ? (
+                          <>
+                            <Loader2 className="w-4 h-4 animate-spin" />
+                            <span>반납 중...</span>
+                          </>
+                        ) : (
+                          <>
+                            <RotateCcw className="w-4 h-4 stroke-[2.5]" />
+                            <span>반납 확인</span>
+                          </>
+                        )}
+                      </button>
+                    </>
                   ) : (
-                    <span className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-emerald-100 text-emerald-800 text-xs sm:text-sm font-bold border border-emerald-200 shadow-xs">
-                      <CheckCircle className="w-4 h-4 text-emerald-600" />
-                      반납 완료
+                    <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-100 text-emerald-800 text-xs font-bold border border-emerald-200 shadow-xs">
+                      <CheckCircle className="w-3.5 h-3.5 text-emerald-600" />
+                      <span>반납 완료</span>
                     </span>
-                  )}
-
-                  {/* Return Button (Height 52px / 13 for instant tablet finger tap) */}
-                  {rental.status === '대여 중' && (
-                    <button
-                      type="button"
-                      disabled={returningId === rental.id}
-                      onClick={() => onReturn(rental)}
-                      className="h-13 px-6 rounded-2xl bg-emerald-600 hover:bg-emerald-500 active:scale-95 disabled:bg-slate-300 text-white text-sm sm:text-base font-black shadow-md shadow-emerald-600/25 flex items-center gap-2 transition cursor-pointer"
-                    >
-                      {returningId === rental.id ? (
-                        <>
-                          <Loader2 className="w-4 h-4 animate-spin" />
-                          <span>반납 처리 중...</span>
-                        </>
-                      ) : (
-                        <>
-                          <RotateCcw className="w-4 h-4 stroke-[2.5]" />
-                          <span>반납 확인</span>
-                        </>
-                      )}
-                    </button>
                   )}
                 </div>
               </div>
@@ -320,6 +373,16 @@ export const RentalList: React.FC<RentalListProps> = ({
           })
         )}
       </div>
+
+      {/* Return Confirmation Modal */}
+      <ReturnConfirmModal
+        isOpen={Boolean(returnTargetRental)}
+        rental={returnTargetRental}
+        approvers={approvers}
+        onClose={() => setReturnTargetRental(null)}
+        onConfirm={onReturn}
+        isSubmitting={Boolean(returningId && returnTargetRental?.id === returningId)}
+      />
     </div>
   );
 };

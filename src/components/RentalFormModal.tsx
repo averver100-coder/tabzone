@@ -100,14 +100,26 @@ export const RentalFormModal: React.FC<RentalFormModalProps> = ({
     }
   }, [isOpen, recommendedCart]);
 
+  useEffect(() => {
+    if (!isOpen) return;
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && !isSubmitting) {
+        onClose();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isOpen, onClose, isSubmitting]);
+
+  if (!isOpen) return null;
+
   const handleGradeChange = (newGrade: string) => {
     setGrade(newGrade);
     setClassNum('');
   };
 
-  if (!isOpen) return null;
-
-  const currentCartAvailable = cartUsed === 'A보관함' ? cartA.available : cartB.available;
+  const currentCartAvailable =
+    cartUsed === '보관함 1' || cartUsed === 'A보관함' ? cartA.available : cartB.available;
   const availableClasses = grade ? GRADE_CLASS_MAPPING[grade] || [] : [];
 
   const handleQuantityAdjust = (delta: number) => {
@@ -175,8 +187,18 @@ export const RentalFormModal: React.FC<RentalFormModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-5 bg-black/65 backdrop-blur-xs animate-in fade-in duration-200 overflow-y-auto">
-      <div className="w-full max-w-5xl bg-white rounded-3xl shadow-2xl border border-slate-200 overflow-hidden my-auto max-h-[94vh] flex flex-col">
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-5 bg-black/65 backdrop-blur-xs animate-in fade-in duration-200 overflow-y-auto"
+      onClick={(e) => {
+        if (e.target === e.currentTarget && !isSubmitting) {
+          onClose();
+        }
+      }}
+    >
+      <div
+        className="w-full max-w-5xl bg-white rounded-3xl shadow-2xl border border-slate-200 overflow-hidden my-auto max-h-[94vh] flex flex-col"
+        onClick={(e) => e.stopPropagation()}
+      >
         {/* Modal Header */}
         <div className="px-6 sm:px-7 py-4 bg-gradient-to-r from-blue-700 via-blue-600 to-indigo-700 text-white flex items-center justify-between shrink-0">
           <div className="flex items-center gap-3.5">
@@ -235,37 +257,37 @@ export const RentalFormModal: React.FC<RentalFormModalProps> = ({
                 </div>
 
                 <div className="grid grid-cols-2 gap-3">
-                  {/* Cart A Option */}
+                  {/* Cart 1 Option */}
                   <label
-                    className={`relative flex flex-col p-4 rounded-2xl border-2 cursor-pointer transition-all select-none ${
-                      cartUsed === 'A보관함'
+                    className={`relative flex flex-col p-3.5 sm:p-4 rounded-2xl border-2 cursor-pointer transition-all select-none ${
+                      cartUsed === '보관함 1' || cartUsed === 'A보관함'
                         ? 'border-blue-600 bg-blue-50/80 shadow-sm ring-2 ring-blue-200'
                         : 'border-slate-200 hover:border-slate-300 bg-white'
                     }`}
                   >
-                    <div className="flex items-center justify-between">
-                      <span className="font-black text-slate-900 text-base sm:text-lg flex items-center gap-2.5">
+                    <div className="flex items-center justify-between gap-1.5 min-w-0">
+                      <span className="font-black text-slate-900 text-sm sm:text-base flex items-center gap-2 whitespace-nowrap shrink-0">
                         <input
                           type="radio"
                           name="cartRadio"
-                          checked={cartUsed === 'A보관함'}
-                          onChange={() => setCartUsed('A보관함')}
-                          className="w-5 h-5 text-blue-600 focus:ring-blue-500 cursor-pointer"
+                          checked={cartUsed === '보관함 1' || cartUsed === 'A보관함'}
+                          onChange={() => setCartUsed('보관함 1')}
+                          className="w-4 h-4 sm:w-5 sm:h-5 text-blue-600 focus:ring-blue-500 cursor-pointer shrink-0"
                         />
-                        A보관함 (1호)
+                        <span>보관함 1</span>
                       </span>
-                      {recommendedCart === 'A보관함' && (
-                        <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-blue-600 text-white text-[11px] font-black">
+                      {(recommendedCart === '보관함 1' || recommendedCart === 'A보관함') && (
+                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-blue-600 text-white text-[11px] font-black shrink-0 whitespace-nowrap">
                           <Sparkles className="w-3 h-3" />
-                          추천
+                          <span>추천</span>
                         </span>
                       )}
                     </div>
-                    <div className="mt-2.5 text-xs sm:text-sm font-bold text-slate-600 flex justify-between">
-                      <span>대여 가능 잔여</span>
+                    <div className="mt-2 text-xs font-bold text-slate-600 flex justify-between items-center whitespace-nowrap">
+                      <span>잔여 수량</span>
                       <span
                         className={
-                          cartA.available > 0 ? 'text-blue-700 font-extrabold text-sm' : 'text-rose-600 font-extrabold text-sm'
+                          cartA.available > 0 ? 'text-blue-700 font-extrabold' : 'text-rose-600 font-extrabold'
                         }
                       >
                         {cartA.available} / {cartA.total}대
@@ -273,37 +295,37 @@ export const RentalFormModal: React.FC<RentalFormModalProps> = ({
                     </div>
                   </label>
 
-                  {/* Cart B Option */}
+                  {/* Cart 2 Option */}
                   <label
-                    className={`relative flex flex-col p-4 rounded-2xl border-2 cursor-pointer transition-all select-none ${
-                      cartUsed === 'B보관함'
+                    className={`relative flex flex-col p-3.5 sm:p-4 rounded-2xl border-2 cursor-pointer transition-all select-none ${
+                      cartUsed === '보관함 2' || cartUsed === 'B보관함'
                         ? 'border-emerald-600 bg-emerald-50/80 shadow-sm ring-2 ring-emerald-200'
                         : 'border-slate-200 hover:border-slate-300 bg-white'
                     }`}
                   >
-                    <div className="flex items-center justify-between">
-                      <span className="font-black text-slate-900 text-base sm:text-lg flex items-center gap-2.5">
+                    <div className="flex items-center justify-between gap-1.5 min-w-0">
+                      <span className="font-black text-slate-900 text-sm sm:text-base flex items-center gap-2 whitespace-nowrap shrink-0">
                         <input
                           type="radio"
                           name="cartRadio"
-                          checked={cartUsed === 'B보관함'}
-                          onChange={() => setCartUsed('B보관함')}
-                          className="w-5 h-5 text-emerald-600 focus:ring-emerald-500 cursor-pointer"
+                          checked={cartUsed === '보관함 2' || cartUsed === 'B보관함'}
+                          onChange={() => setCartUsed('보관함 2')}
+                          className="w-4 h-4 sm:w-5 sm:h-5 text-emerald-600 focus:ring-emerald-500 cursor-pointer shrink-0"
                         />
-                        B보관함 (2호)
+                        <span>보관함 2</span>
                       </span>
-                      {recommendedCart === 'B보관함' && (
-                        <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-emerald-600 text-white text-[11px] font-black">
+                      {(recommendedCart === '보관함 2' || recommendedCart === 'B보관함') && (
+                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-600 text-white text-[11px] font-black shrink-0 whitespace-nowrap">
                           <Sparkles className="w-3 h-3" />
-                          추천
+                          <span>추천</span>
                         </span>
                       )}
                     </div>
-                    <div className="mt-2.5 text-xs sm:text-sm font-bold text-slate-600 flex justify-between">
-                      <span>대여 가능 잔여</span>
+                    <div className="mt-2 text-xs font-bold text-slate-600 flex justify-between items-center whitespace-nowrap">
+                      <span>잔여 수량</span>
                       <span
                         className={
-                          cartB.available > 0 ? 'text-emerald-700 font-extrabold text-sm' : 'text-rose-600 font-extrabold text-sm'
+                          cartB.available > 0 ? 'text-emerald-700 font-extrabold' : 'text-rose-600 font-extrabold'
                         }
                       >
                         {cartB.available} / {cartB.total}대

@@ -254,7 +254,7 @@ export const WhitelistModal: React.FC<WhitelistModalProps> = ({
             }`}
           >
             <FolderLock className="w-4 h-4 text-blue-600" />
-            <span>대여 승인자 관리 ({approvers.length})</span>
+            <span>대여/반납 승인자 관리 ({approvers.length})</span>
           </button>
 
           <button
@@ -440,8 +440,8 @@ export const WhitelistModal: React.FC<WhitelistModalProps> = ({
           {activeTab === 'approvers' && (
             <div className="space-y-4">
               <div className="p-3.5 bg-blue-50 border border-blue-200 rounded-2xl text-xs sm:text-sm text-blue-900 font-medium">
-                대여 승인자는 교육정보부 등 태블릿 관리를 책임지는 담당자입니다.
-                대여 폼에서 1순위 기본값 없이 <strong>선택이 강제</strong>되므로, 등록된 목록에서 교사/학생이 직접 선택하게 됩니다.
+                승인자는 교육정보부 등 태블릿 관리를 책임지는 담당자입니다.
+                대여 승인뿐만 아니라 <strong>반납 승인 시에도 동일한 승인자 목록</strong>에서 선택하거나 확인할 수 있습니다. (대여승인자와 반납승인자는 서로 다를 수 있습니다)
               </div>
 
               {/* Approver Add Form */}
@@ -452,10 +452,10 @@ export const WhitelistModal: React.FC<WhitelistModalProps> = ({
                 <div className="flex items-center justify-between">
                   <span className="text-sm font-black text-blue-900 flex items-center gap-1.5">
                     <Plus className="w-4 h-4" />
-                    신규 대여 승인자 추가
+                    신규 대여/반납 승인자 추가
                   </span>
                   <span className="text-xs text-blue-600 font-semibold">
-                    대여 폼 라디오 옵션에 즉시 연동
+                    대여 및 반납 승인자 목록에 즉시 연동
                   </span>
                 </div>
 

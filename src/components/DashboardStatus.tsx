@@ -63,40 +63,37 @@ export const DashboardStatus: React.FC<DashboardStatusProps> = ({
 
       {/* Main Storage Status Cards Grid (Galaxy Tab S6 Lite 5:3 landscape 3-column optimization) */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4 sm:gap-5">
-        {/* Cart A Card */}
+        {/* Cart 1 Card */}
         <div
           onClick={onOpenRentalModal}
           className={`relative p-5 sm:p-6 rounded-3xl bg-white border-2 shadow-xs transition-all hover:shadow-md cursor-pointer active:scale-[0.99] select-none ${
-            recommendedCart === 'A보관함'
+            recommendedCart === '보관함 1' || recommendedCart === 'A보관함'
               ? 'border-blue-500 ring-4 ring-blue-100/80'
               : 'border-slate-200 hover:border-blue-300'
           }`}
         >
-          {recommendedCart === 'A보관함' && (
-            <div className="absolute -top-3.5 left-5 inline-flex items-center gap-1.5 px-3.5 py-1 rounded-full bg-blue-600 text-white text-xs font-black shadow-md">
+          {(recommendedCart === '보관함 1' || recommendedCart === 'A보관함') && (
+            <div className="absolute -top-3.5 left-5 inline-flex items-center gap-1.5 px-3.5 py-1 rounded-full bg-blue-600 text-white text-xs font-black shadow-md whitespace-nowrap">
               <Sparkles className="w-3.5 h-3.5" />
-              <span>추천 보관함 (교차 균형)</span>
+              <span>추천 보관함</span>
             </div>
           )}
 
           <div className="flex items-start justify-between">
             <div className="flex items-center gap-3.5">
-              <div className="w-14 h-14 rounded-2xl bg-blue-50 text-blue-600 border border-blue-200 flex items-center justify-center font-black text-2xl shadow-inner shrink-0">
-                A
+              <div className="w-13 h-13 rounded-2xl bg-blue-50 text-blue-600 border border-blue-200 flex items-center justify-center font-black text-2xl shadow-inner shrink-0">
+                1
               </div>
               <div>
-                <h3 className="text-xl font-black text-slate-900 flex items-center gap-2">
-                  <span>A보관함</span>
-                  <span className="text-xs px-2.5 py-0.5 rounded-md bg-slate-100 text-slate-700 font-bold">
-                    1호기
-                  </span>
+                <h3 className="text-xl font-black text-slate-900 whitespace-nowrap">
+                  보관함 1
                 </h3>
                 <p className="text-xs sm:text-sm text-slate-500 font-medium mt-0.5">총 30대 규격 배치</p>
               </div>
             </div>
 
             <div className="text-right">
-              <div className="text-3xl sm:text-4xl font-black text-blue-600 tracking-tight">
+              <div className="text-3xl sm:text-4xl font-black text-blue-600 tracking-tight whitespace-nowrap">
                 {cartA.available}
                 <span className="text-base sm:text-lg font-bold text-slate-400"> / {cartA.total}대</span>
               </div>
@@ -147,40 +144,37 @@ export const DashboardStatus: React.FC<DashboardStatusProps> = ({
           </div>
         </div>
 
-        {/* Cart B Card */}
+        {/* Cart 2 Card */}
         <div
           onClick={onOpenRentalModal}
           className={`relative p-5 sm:p-6 rounded-3xl bg-white border-2 shadow-xs transition-all hover:shadow-md cursor-pointer active:scale-[0.99] select-none ${
-            recommendedCart === 'B보관함'
+            recommendedCart === '보관함 2' || recommendedCart === 'B보관함'
               ? 'border-emerald-500 ring-4 ring-emerald-100/80'
               : 'border-slate-200 hover:border-emerald-300'
           }`}
         >
-          {recommendedCart === 'B보관함' && (
-            <div className="absolute -top-3.5 left-5 inline-flex items-center gap-1.5 px-3.5 py-1 rounded-full bg-emerald-600 text-white text-xs font-black shadow-md">
+          {(recommendedCart === '보관함 2' || recommendedCart === 'B보관함') && (
+            <div className="absolute -top-3.5 left-5 inline-flex items-center gap-1.5 px-3.5 py-1 rounded-full bg-emerald-600 text-white text-xs font-black shadow-md whitespace-nowrap">
               <Sparkles className="w-3.5 h-3.5" />
-              <span>추천 보관함 (교차 균형)</span>
+              <span>추천 보관함</span>
             </div>
           )}
 
           <div className="flex items-start justify-between">
             <div className="flex items-center gap-3.5">
-              <div className="w-14 h-14 rounded-2xl bg-emerald-50 text-emerald-600 border border-emerald-200 flex items-center justify-center font-black text-2xl shadow-inner shrink-0">
-                B
+              <div className="w-13 h-13 rounded-2xl bg-emerald-50 text-emerald-600 border border-emerald-200 flex items-center justify-center font-black text-2xl shadow-inner shrink-0">
+                2
               </div>
               <div>
-                <h3 className="text-xl font-black text-slate-900 flex items-center gap-2">
-                  <span>B보관함</span>
-                  <span className="text-xs px-2.5 py-0.5 rounded-md bg-slate-100 text-slate-700 font-bold">
-                    2호기
-                  </span>
+                <h3 className="text-xl font-black text-slate-900 whitespace-nowrap">
+                  보관함 2
                 </h3>
                 <p className="text-xs sm:text-sm text-slate-500 font-medium mt-0.5">총 30대 규격 배치</p>
               </div>
             </div>
 
             <div className="text-right">
-              <div className="text-3xl sm:text-4xl font-black text-emerald-600 tracking-tight">
+              <div className="text-3xl sm:text-4xl font-black text-emerald-600 tracking-tight whitespace-nowrap">
                 {cartB.available}
                 <span className="text-base sm:text-lg font-bold text-slate-400"> / {cartB.total}대</span>
               </div>

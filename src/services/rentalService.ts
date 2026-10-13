@@ -85,11 +85,11 @@ export function calculateCartCapacities(rentals: Rental[]): {
   const activeRentals = rentals.filter((r) => r.status === '대여 중');
 
   const rentedA = activeRentals
-    .filter((r) => r.cartUsed === 'A보관함')
+    .filter((r) => r.cartUsed === '보관함 1' || r.cartUsed === 'A보관함')
     .reduce((sum, r) => sum + (Number(r.quantity) || 0), 0);
 
   const rentedB = activeRentals
-    .filter((r) => r.cartUsed === 'B보관함')
+    .filter((r) => r.cartUsed === '보관함 2' || r.cartUsed === 'B보관함')
     .reduce((sum, r) => sum + (Number(r.quantity) || 0), 0);
 
   const availableA = Math.max(0, CART_CAPACITY - rentedA);
@@ -115,15 +115,15 @@ export function calculateCartCapacities(rentals: Rental[]): {
  */
 export function getRecommendedCart(rentals: Rental[]): CartType {
   if (!rentals || rentals.length === 0) {
-    return 'A보관함';
+    return '보관함 1';
   }
 
   // Look at the latest rental (sorted by createdAt desc)
   const lastRental = rentals[0];
-  if (lastRental && lastRental.cartUsed === 'A보관함') {
-    return 'B보관함';
+  if (lastRental && (lastRental.cartUsed === '보관함 1' || lastRental.cartUsed === 'A보관함')) {
+    return '보관함 2';
   }
-  return 'A보관함';
+  return '보관함 1';
 }
 
 /**
@@ -191,19 +191,32 @@ export async function createRental(
 }
 
 /**
- * Process return for a rental
+ * Process return for a rental with returnApprover and optional returnNotes
  */
 export async function returnRental(
   operator: { uid: string; email: string },
-  rental: Rental
+  rental: Rental,
+  returnData?: {
+    returnApprover?: string;
+    returnNotes?: string;
+  }
 ): Promise<void> {
   const docRef = doc(db, RENTALS_COLLECTION, rental.id);
   const returnedAt = new Date().toISOString();
+  const returnApprover = (returnData?.returnApprover || rental.approver || '').trim();
+  const returnNotes = (returnData?.returnNotes || '').trim() || null;
 
   // Local update
   const localList = getLocalRentals().map((r) =>
     r.id === rental.id
-      ? { ...r, status: '반납 완료' as const, returnedAt, updatedByEmail: operator.email }
+      ? {
+          ...r,
+          status: '반납 완료' as const,
+          returnedAt,
+          returnApprover,
+          returnNotes,
+          updatedByEmail: operator.email,
+        }
       : r
   );
   saveLocalRentals(localList);
@@ -212,16 +225,21 @@ export async function returnRental(
     await updateDoc(docRef, {
       status: '반납 완료',
       returnedAt: returnedAt,
+      returnApprover: returnApprover,
+      returnNotes: returnNotes,
       updatedByEmail: operator.email,
     });
   } catch (error) {
     console.warn('Firestore return updateDoc notice, updated locally:', error);
   }
 
+  const memoText = returnNotes ? ` [비고: ${returnNotes}]` : '';
   await createAuditLog(
     operator,
     '반납 완료',
-    `${rental.teacherName} 선생님 (${rental.gradeClass}) ${rental.cartUsed} ${rental.quantity}대 반납 확인`,
-    `반납시각: ${new Date(returnedAt).toLocaleTimeString('ko-KR')}, 처리자: ${operator.email}`
+    `${rental.teacherName} 선생님 (${rental.gradeClass}) ${rental.cartUsed} ${rental.quantity}대 반납 확인${memoText}`,
+    `반납시각: ${new Date(returnedAt).toLocaleTimeString('ko-KR')}, 대여승인자: ${rental.approver}, 반납승인자: ${returnApprover}${
+      returnNotes ? `, 특이사항: ${returnNotes}` : ''
+    }, 처리자: ${operator.email}`
   );
 }

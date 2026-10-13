@@ -380,17 +380,21 @@ export default function App() {
     }
   };
 
-  // Process Return
-  const handleReturnRental = async (rental: Rental) => {
+  // Process Return with returnApprover and returnNotes
+  const handleReturnRental = async (
+    rental: Rental,
+    returnData: { returnApprover: string; returnNotes: string }
+  ) => {
     setReturningId(rental.id);
     try {
       const operator = currentUser
         ? { uid: currentUser.uid, email: currentUser.email }
         : { uid: 'kiosk-return', email: 'return@tab.srider.kr' };
 
-      await returnRental(operator, rental);
+      await returnRental(operator, rental, returnData);
+      const notePreview = returnData.returnNotes ? ` [비고: ${returnData.returnNotes}]` : '';
       showToast(
-        `📦 ${rental.teacherName} (${rental.gradeClass}) ${rental.cartUsed} ${rental.quantity}대 반납이 완료되어 잔여 수량이 복구되었습니다.`
+        `📦 ${rental.teacherName} (${rental.gradeClass}) ${rental.cartUsed} ${rental.quantity}대 반납이 완료되었습니다. (반납승인: ${returnData.returnApprover})${notePreview}`
       );
     } catch (err: any) {
       console.error('Return error:', err);
@@ -530,13 +534,13 @@ export default function App() {
               <Tablet className="w-6 h-6 text-white" />
             </div>
             <div>
-              <div className="text-base sm:text-lg font-black text-slate-900 flex flex-wrap items-center gap-2.5">
-                <span>교내 스마트 태블릿 현황판</span>
-                <span className="text-xs font-bold px-2.5 py-0.5 rounded-full bg-blue-50 text-blue-700 border border-blue-200">
-                  총 60대 운용 (A: 30대 / B: 30대)
+              <div className="text-base sm:text-lg font-black text-slate-900 flex flex-wrap items-center gap-2">
+                <span className="whitespace-nowrap">교내 스마트 태블릿 현황판</span>
+                <span className="text-xs font-bold px-2.5 py-0.5 rounded-full bg-blue-50 text-blue-700 border border-blue-200 whitespace-nowrap">
+                  총 60대 운용 (보관함 1: 30대 / 보관함 2: 30대)
                 </span>
-                <span className="text-xs font-bold px-2.5 py-0.5 rounded-full bg-slate-100 text-slate-700">
-                  현재 즉시 대여 가능: <strong className="text-blue-600">{totalAvailable}대</strong>
+                <span className="text-xs font-bold px-2.5 py-0.5 rounded-full bg-slate-100 text-slate-700 whitespace-nowrap">
+                  대여 가능: <strong className="text-blue-600">{totalAvailable}대</strong>
                 </span>
               </div>
             </div>
@@ -569,6 +573,7 @@ export default function App() {
         {/* Rentals List (Real-time active rentals & returns) */}
         <RentalList
           rentals={rentals}
+          approvers={approvers}
           isPast1630={isPast1630}
           onReturn={handleReturnRental}
           returningId={returningId}
