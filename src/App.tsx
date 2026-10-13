@@ -540,17 +540,17 @@ export default function App() {
 
       {/* Main Content Area */}
       {/* Main Content Area (Galaxy Tab S6 Lite 5:3 Landscape Optimized: max-w-[1440px]) */}
-      <main className="flex-1 max-w-[1440px] w-full mx-auto px-4 sm:px-6 lg:px-8 py-5 sm:py-6 space-y-6">
+      <main className="flex-1 max-w-[1440px] w-full mx-auto px-4 sm:px-6 lg:px-8 py-3.5 sm:py-4.5 space-y-3.5 sm:space-y-4">
         {/* Kiosk Hero / School Welcome Bar */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-4 sm:p-5 rounded-3xl bg-white border border-slate-200/80 shadow-xs">
-          <div className="flex items-center gap-3.5">
-            <div className="w-13 h-13 rounded-2xl bg-gradient-to-tr from-blue-600 via-indigo-600 to-cyan-500 text-white flex items-center justify-center font-black shadow-md shadow-blue-500/20 shrink-0">
-              <Tablet className="w-6 h-6 text-white" />
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-3 sm:p-4 rounded-2xl bg-white border border-slate-200/80 shadow-xs">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 sm:w-11 sm:h-11 rounded-xl bg-gradient-to-tr from-blue-600 via-indigo-600 to-cyan-500 text-white flex items-center justify-center font-black shadow-md shadow-blue-500/20 shrink-0">
+              <Tablet className="w-5 h-5 text-white" />
             </div>
             <div>
               <div className="text-base sm:text-lg font-black text-slate-900 flex flex-wrap items-center gap-2">
                 <span className="whitespace-nowrap">교내 스마트 태블릿 현황판</span>
-                <span className="text-xs font-bold px-2.5 py-0.5 rounded-full bg-slate-100 text-slate-700 whitespace-nowrap">
+                <span className="text-xs font-bold px-2 py-0.5 rounded-full bg-slate-100 text-slate-700 whitespace-nowrap">
                   대여 가능: <strong className="text-blue-600">{totalAvailable}대</strong>
                 </span>
               </div>
@@ -561,9 +561,9 @@ export default function App() {
             <button
               type="button"
               onClick={() => setIsRentalModalOpen(true)}
-              className="w-full sm:w-auto h-14 px-8 rounded-2xl bg-gradient-to-r from-blue-600 via-indigo-600 to-blue-700 hover:from-blue-700 hover:to-indigo-700 active:scale-95 text-white font-black text-base shadow-xl shadow-blue-600/30 flex items-center justify-center gap-2.5 transition cursor-pointer"
+              className="w-full sm:w-auto h-11 sm:h-12 px-6 rounded-xl bg-gradient-to-r from-blue-600 via-indigo-600 to-blue-700 hover:from-blue-700 hover:to-indigo-700 active:scale-95 text-white font-black text-sm sm:text-base shadow-lg shadow-blue-600/30 flex items-center justify-center gap-2 transition cursor-pointer"
             >
-              <Plus className="w-5 h-5 stroke-[3]" />
+              <Plus className="w-4 h-4 stroke-[3]" />
               <span>태블릿 대여하기</span>
             </button>
           </div>

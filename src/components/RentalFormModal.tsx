@@ -111,6 +111,18 @@ export const RentalFormModal: React.FC<RentalFormModalProps> = ({
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [isOpen, onClose, isSubmitting]);
 
+  const uniqueTeachers = useMemo(() => {
+    return Array.from(
+      new Map(teachers.map((t) => [`${t.name?.trim()}__${t.subject?.trim()}`, t])).values()
+    );
+  }, [teachers]);
+
+  const uniqueApprovers = useMemo(() => {
+    return Array.from(
+      new Map(approvers.map((a) => [`${a.name?.trim()}__${a.position?.trim()}`, a])).values()
+    );
+  }, [approvers]);
+
   if (!isOpen) return null;
 
   const handleGradeChange = (newGrade: string) => {
@@ -128,18 +140,6 @@ export const RentalFormModal: React.FC<RentalFormModalProps> = ({
       return Math.min(30, Math.max(1, next));
     });
   };
-
-  const uniqueTeachers = useMemo(() => {
-    return Array.from(
-      new Map(teachers.map((t) => [`${t.name?.trim()}__${t.subject?.trim()}`, t])).values()
-    );
-  }, [teachers]);
-
-  const uniqueApprovers = useMemo(() => {
-    return Array.from(
-      new Map(approvers.map((a) => [`${a.name?.trim()}__${a.position?.trim()}`, a])).values()
-    );
-  }, [approvers]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
