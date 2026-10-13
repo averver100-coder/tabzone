@@ -5,6 +5,7 @@ import {
   Calendar,
   CheckCircle,
   CheckCircle2,
+  ChevronDown,
   Clock,
   FileText,
   Filter,
@@ -17,7 +18,7 @@ import {
   User,
   Users,
 } from 'lucide-react';
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Approver, CartType, Rental } from '../types';
 import { ReturnConfirmModal } from './ReturnConfirmModal';
 
@@ -43,6 +44,12 @@ export const RentalList: React.FC<RentalListProps> = ({
   const [filterCart, setFilterCart] = useState<'ALL' | '보관함 1' | '보관함 2'>('ALL');
   const [searchQuery, setSearchQuery] = useState('');
   const [returnTargetRental, setReturnTargetRental] = useState<Rental | null>(null);
+  const [visibleCount, setVisibleCount] = useState<number>(5);
+
+  // Reset to 5 when active tab, storage filter, or search query changes
+  useEffect(() => {
+    setVisibleCount(5);
+  }, [activeTab, filterCart, searchQuery]);
 
   const filteredRentals = rentals.filter((rental) => {
     // Tab filter

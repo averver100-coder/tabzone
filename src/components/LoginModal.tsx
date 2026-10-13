@@ -11,6 +11,7 @@ import {
 } from 'lucide-react';
 import React, { useEffect, useState } from 'react';
 import { AuthErrorInfo } from '../services/authService';
+import { TabZoneLogo } from './TabZoneLogo';
 
 interface LoginModalProps {
   isOpen: boolean;
@@ -104,12 +105,8 @@ export const LoginModal: React.FC<LoginModalProps> = ({
 
         {/* 1. Header (Identical to devicecare-drab.vercel.app) */}
         <div className="bg-[#122744] pt-8 pb-7 px-6 text-center text-white relative overflow-hidden">
-          <div className="w-20 h-20 sm:w-24 sm:h-24 bg-white rounded-full mx-auto flex items-center justify-center p-2 mb-3.5 shadow-xl ring-4 ring-white/20">
-            <img
-              src="/icon.svg"
-              alt="IT Desk 로고"
-              className="w-full h-full object-contain select-none pointer-events-none drop-shadow-xs"
-            />
+          <div className="w-20 h-20 sm:w-24 sm:h-24 mx-auto flex items-center justify-center mb-3.5">
+            <TabZoneLogo className="w-full h-full drop-shadow-xl" />
           </div>
           <h1 className="text-3xl font-black text-white tracking-tight">IT Desk</h1>
           <p className="text-xs sm:text-sm font-semibold text-blue-200 mt-1 tracking-wide">

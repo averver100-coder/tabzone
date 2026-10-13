@@ -13,6 +13,7 @@ import {
 import React, { useEffect, useState } from 'react';
 import { AuthUser } from '../types';
 import { PWAInstallButton } from './PWAInstallButton';
+import { TabZoneLogo } from './TabZoneLogo';
 
 interface HeaderProps {
   currentUser: AuthUser | null;
@@ -88,14 +89,8 @@ export const Header: React.FC<HeaderProps> = ({
       <div className="max-w-[1440px] mx-auto px-4 sm:px-6 lg:px-8 py-3 flex items-center justify-between gap-3 sm:gap-4">
         {/* Brand & School Logo */}
         <div className="flex items-center gap-3 shrink-0">
-          <div className="relative group">
-            <div className="w-11 h-11 sm:w-12 sm:h-12 rounded-2xl bg-gradient-to-tr from-blue-700 via-blue-600 to-cyan-500 p-0.5 shadow-md flex items-center justify-center transition-transform group-hover:scale-105 shrink-0">
-              <img
-                src="/icon.svg"
-                alt="탭존 로고"
-                className="w-9 h-9 sm:w-10 sm:h-10 object-contain drop-shadow"
-              />
-            </div>
+          <div className="relative group cursor-pointer">
+            <TabZoneLogo className="w-11 h-11 sm:w-12 sm:h-12 transition-transform group-hover:scale-105" />
           </div>
 
           <div className="shrink-0">

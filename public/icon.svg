@@ -1,69 +1,144 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
   <defs>
-    <linearGradient id="shieldBg" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" stop-color="#1e3a8a" />
-      <stop offset="50%" stop-color="#2563eb" />
-      <stop offset="100%" stop-color="#0284c7" />
-    </linearGradient>
-    <linearGradient id="shieldBorder" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" stop-color="#60a5fa" />
-      <stop offset="50%" stop-color="#93c5fd" />
-      <stop offset="100%" stop-color="#38bdf8" />
-    </linearGradient>
-    <linearGradient id="tabletGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" stop-color="#ffffff" />
-      <stop offset="100%" stop-color="#e2e8f0" />
-    </linearGradient>
-    <linearGradient id="screenGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" stop-color="#0f172a" />
-      <stop offset="100%" stop-color="#1e293b" />
-    </linearGradient>
-    <filter id="glow" x="-20%" y="-20%" width="140%" height="140%">
-      <feDropShadow dx="0" dy="8" stdDeviation="16" flood-color="#1d4ed8" flood-opacity="0.4" />
+    <!-- Background Canvas Soft Drop Shadow -->
+    <filter id="shieldShadow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="12" stdDeviation="16" flood-color="#000000" flood-opacity="0.32" />
     </filter>
+
+    <!-- 3D Gold Emboss Shadow -->
+    <filter id="goldEmboss" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="4" stdDeviation="4" flood-color="#061224" flood-opacity="0.55" />
+    </filter>
+
+    <!-- Metallic Gold Outer Bevel Gradient -->
+    <linearGradient id="goldOuterRim" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#fae29c" />
+      <stop offset="25%" stop-color="#dfb86e" />
+      <stop offset="50%" stop-color="#be8c3b" />
+      <stop offset="75%" stop-color="#dfba72" />
+      <stop offset="100%" stop-color="#8a5c18" />
+    </linearGradient>
+
+    <!-- Inner Gold Lip Gradient -->
+    <linearGradient id="goldInnerRim" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#ffd980" />
+      <stop offset="40%" stop-color="#d4a34f" />
+      <stop offset="100%" stop-color="#855416" />
+    </linearGradient>
+
+    <!-- Navy Shield Face Gradient (Left facet: slightly lit, Right facet: slightly deeper) -->
+    <linearGradient id="navyFacetLeft" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#234674" />
+      <stop offset="50%" stop-color="#183459" />
+      <stop offset="100%" stop-color="#112540" />
+    </linearGradient>
+
+    <linearGradient id="navyFacetRight" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#1a3457" />
+      <stop offset="50%" stop-color="#122744" />
+      <stop offset="100%" stop-color="#0b1a2e" />
+    </linearGradient>
+
+    <!-- Gold Emblem Metal Fill -->
+    <linearGradient id="goldEmblem" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#fae097" />
+      <stop offset="35%" stop-color="#e2b96f" />
+      <stop offset="70%" stop-color="#c49340" />
+      <stop offset="100%" stop-color="#91611c" />
+    </linearGradient>
+
+    <!-- Cursor Gradient with extra metallic luster -->
+    <linearGradient id="goldCursor" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#fff0b8" />
+      <stop offset="40%" stop-color="#e8c27a" />
+      <stop offset="80%" stop-color="#b8832c" />
+      <stop offset="100%" stop-color="#73470f" />
+    </linearGradient>
   </defs>
 
-  <!-- Background Shield Shadow & Body -->
-  <path d="M256 36 C352 76 432 76 448 84 C454 196 442 344 256 476 C70 344 58 196 64 84 C80 76 160 76 256 36 Z" 
-        fill="url(#shieldBg)" 
-        stroke="url(#shieldBorder)" 
-        stroke-width="12" 
-        stroke-linejoin="round"
-        filter="url(#glow)" />
+  <!-- Outer Shield Shadow & Thick Gold Rim -->
+  <path d="M 256,44 L 400,78 L 400,276 C 400,366 338,426 256,468 C 174,426 112,366 112,276 L 112,78 Z"
+        fill="url(#goldOuterRim)"
+        filter="url(#shieldShadow)" />
 
-  <!-- Inner Shield Trim Line -->
-  <path d="M256 58 C342 94 414 94 428 100 C434 196 422 328 256 448 C90 328 78 196 84 100 C98 94 170 94 256 58 Z" 
-        fill="none" 
-        stroke="#ffffff" 
-        stroke-opacity="0.25" 
-        stroke-width="4" />
+  <!-- Inner Gold Bevel Contour -->
+  <path d="M 256,58 L 388,89 L 388,272 C 388,354 330,412 256,450 C 182,412 124,354 124,272 L 124,89 Z"
+        fill="#825418" />
 
-  <!-- Stylized Tablet Body inside Shield -->
-  <g transform="translate(146, 126)">
-    <!-- Outer tablet bezel -->
-    <rect x="0" y="0" width="220" height="260" rx="28" fill="url(#tabletGrad)" />
-    <!-- Screen area -->
-    <rect x="14" y="24" width="192" height="212" rx="14" fill="url(#screenGrad)" />
-    
-    <!-- Screen Camera -->
-    <circle cx="110" cy="12" r="3.5" fill="#64748b" />
-    
-    <!-- Screen Content: Storage Racks A and B -->
-    <rect x="36" y="56" width="36" height="52" rx="8" fill="#38bdf8" fill-opacity="0.9" />
-    <text x="54" y="88" font-family="sans-serif" font-weight="900" font-size="22" fill="#ffffff" text-anchor="middle">A</text>
+  <path d="M 256,62 L 384,92 L 384,270 C 384,350 328,408 256,444 C 184,408 128,350 128,270 L 128,92 Z"
+        fill="url(#goldInnerRim)" />
 
-    <rect x="84" y="56" width="36" height="52" rx="8" fill="#34d399" fill-opacity="0.9" />
-    <text x="102" y="88" font-family="sans-serif" font-weight="900" font-size="22" fill="#ffffff" text-anchor="middle">B</text>
+  <!-- Shield Navy Interior (Cut into left and right faceted halves for 3D creased lighting) -->
+  <!-- Left Half -->
+  <path d="M 256,72 L 138,100 L 138,266 C 138,342 190,396 256,432 Z"
+        fill="url(#navyFacetLeft)" />
 
-    <rect x="132" y="56" width="52" height="52" rx="8" fill="#818cf8" fill-opacity="0.9" />
-    <path d="M148 82 L156 90 L172 74" fill="none" stroke="#ffffff" stroke-width="5" stroke-linecap="round" stroke-linejoin="round" />
+  <!-- Right Half -->
+  <path d="M 256,72 L 374,100 L 374,266 C 374,342 322,396 256,432 Z"
+        fill="url(#navyFacetRight)" />
 
-    <!-- TabZone Title Graphic on Screen -->
-    <text x="110" y="152" font-family="'Pretendard', sans-serif" font-weight="900" font-size="26" fill="#f8fafc" text-anchor="middle" letter-spacing="1">TABZONE</text>
-    <text x="110" y="180" font-family="'Pretendard', sans-serif" font-weight="700" font-size="14" fill="#38bdf8" text-anchor="middle">스마트 태블릿</text>
+  <!-- Subtle Center Vertical Spine Reflection -->
+  <line x1="256" y1="72" x2="256" y2="432" stroke="#ffffff" stroke-width="1.5" stroke-opacity="0.12" />
 
-    <!-- Bottom Indicator -->
-    <rect x="80" y="212" width="60" height="4" rx="2" fill="#94a3b8" />
-    <circle cx="110" cy="248" r="4.5" fill="#94a3b8" />
+  <!-- ======================================================== -->
+  <!-- UPPER GRAPHIC: GOLD TABLET & CURSOR ARROW               -->
+  <!-- ======================================================== -->
+  <g filter="url(#goldEmboss)">
+    <!-- Tablet Outer Shell (Landscape) -->
+    <rect x="176" y="128" width="160" height="108" rx="16" ry="16"
+          fill="none" stroke="url(#goldEmblem)" stroke-width="14" stroke-linejoin="round" />
+
+    <!-- Left Camera Dot -->
+    <circle cx="187" cy="182" r="3.5" fill="url(#goldEmblem)" />
+    <!-- Right Sensor Dot -->
+    <circle cx="325" cy="182" r="2.5" fill="url(#goldEmblem)" />
+
+    <!-- Tablet Screen Inset Dark Navy -->
+    <rect x="194" y="142" width="124" height="80" rx="6" ry="6"
+          fill="#0c1828" fill-opacity="0.9" />
+
+    <!-- Pointer Cursor Arrow (Gold 3D, pointing up-left into the screen) -->
+    <path d="M 268,172 L 314,244 L 298,247 L 318,284 L 298,294 L 278,257 L 260,270 Z"
+          fill="url(#goldCursor)"
+          stroke="#73470f"
+          stroke-width="2.5"
+          stroke-linejoin="round" />
+  </g>
+
+  <!-- ======================================================== -->
+  <!-- LOWER GRAPHIC: 3D EMBOSSED KOREAN "탭존"                -->
+  <!-- ======================================================== -->
+  <g filter="url(#goldEmboss)">
+    <!-- ---------------- '탭' ---------------- -->
+    <!-- 'ㅌ' (top-left) -->
+    <rect x="164" y="278" width="10" height="54" rx="2" fill="url(#goldEmblem)" />
+    <rect x="164" y="278" width="46" height="10" rx="2" fill="url(#goldEmblem)" />
+    <rect x="164" y="300" width="42" height="10" rx="2" fill="url(#goldEmblem)" />
+    <rect x="164" y="322" width="46" height="10" rx="2" fill="url(#goldEmblem)" />
+
+    <!-- 'ㅐ' (top-right) -->
+    <rect x="218" y="276" width="10" height="56" rx="2" fill="url(#goldEmblem)" />
+    <rect x="226" y="299" width="16" height="10" rx="1" fill="url(#goldEmblem)" />
+    <rect x="240" y="274" width="11" height="58" rx="2" fill="url(#goldEmblem)" />
+
+    <!-- 'ㅂ' 받침 (bottom) -->
+    <rect x="174" y="342" width="11" height="42" rx="2" fill="url(#goldEmblem)" />
+    <rect x="230" y="342" width="11" height="42" rx="2" fill="url(#goldEmblem)" />
+    <rect x="174" y="360" width="67" height="10" rx="1" fill="url(#goldEmblem)" />
+    <rect x="174" y="374" width="67" height="10" rx="2" fill="url(#goldEmblem)" />
+
+    <!-- ---------------- '존' ---------------- -->
+    <!-- 'ㅈ' (top) -->
+    <rect x="270" y="278" width="76" height="10" rx="2" fill="url(#goldEmblem)" />
+    <path d="M 312,286 L 274,328 L 286,328 L 318,286 Z" fill="url(#goldEmblem)" />
+    <path d="M 304,286 L 334,328 L 346,328 L 314,286 Z" fill="url(#goldEmblem)" />
+
+    <!-- 'ㅗ' (middle) -->
+    <rect x="303" y="328" width="10" height="18" rx="2" fill="url(#goldEmblem)" />
+    <rect x="262" y="342" width="92" height="10" rx="2" fill="url(#goldEmblem)" />
+
+    <!-- 'ㄴ' 받침 (bottom) -->
+    <rect x="280" y="354" width="11" height="30" rx="2" fill="url(#goldEmblem)" />
+    <rect x="280" y="374" width="62" height="10" rx="2" fill="url(#goldEmblem)" />
   </g>
 </svg>

@@ -247,3 +247,5 @@ export const DashboardStatus: React.FC<DashboardStatusProps> = ({
     </div>
   );
 };
+
+export { WeeklyRentalChart } from './WeeklyRentalChart';
