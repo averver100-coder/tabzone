@@ -74,12 +74,12 @@ export const DashboardStatus: React.FC<DashboardStatusProps> = ({
           )}
 
           <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-lg bg-blue-50 text-blue-600 border border-blue-200 flex items-center justify-center font-black text-sm sm:text-base shadow-inner shrink-0">
+            <div className="flex items-baseline gap-1.5">
+              <span className="text-3xl sm:text-4xl font-black text-blue-600 tracking-tight leading-none select-none">
                 1
-              </div>
-              <h3 className="text-sm sm:text-base font-black text-slate-900 whitespace-nowrap">
-                보관함 1
+              </span>
+              <h3 className="text-sm sm:text-base font-black text-slate-800 whitespace-nowrap">
+                보관함
               </h3>
             </div>
 
@@ -144,12 +144,12 @@ export const DashboardStatus: React.FC<DashboardStatusProps> = ({
           )}
 
           <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-lg bg-emerald-50 text-emerald-600 border border-emerald-200 flex items-center justify-center font-black text-sm sm:text-base shadow-inner shrink-0">
+            <div className="flex items-baseline gap-1.5">
+              <span className="text-3xl sm:text-4xl font-black text-emerald-600 tracking-tight leading-none select-none">
                 2
-              </div>
-              <h3 className="text-sm sm:text-base font-black text-slate-900 whitespace-nowrap">
-                보관함 2
+              </span>
+              <h3 className="text-sm sm:text-base font-black text-slate-800 whitespace-nowrap">
+                보관함
               </h3>
             </div>
 
