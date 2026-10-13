@@ -188,7 +188,8 @@ export const RentalFormModal: React.FC<RentalFormModalProps> = ({
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-5 bg-black/65 backdrop-blur-xs animate-in fade-in duration-200 overflow-y-auto"
+      className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-5 bg-slate-950/75 animate-in fade-in duration-150 overflow-y-auto"
+      style={{ WebkitBackfaceVisibility: 'hidden', backfaceVisibility: 'hidden' }}
       onClick={(e) => {
         if (e.target === e.currentTarget && !isSubmitting) {
           onClose();
@@ -197,12 +198,13 @@ export const RentalFormModal: React.FC<RentalFormModalProps> = ({
     >
       <div
         className="w-full max-w-5xl bg-white rounded-3xl shadow-2xl border border-slate-200 overflow-hidden my-auto max-h-[94vh] flex flex-col"
+        style={{ transform: 'translateZ(0)', WebkitTransform: 'translateZ(0)' }}
         onClick={(e) => e.stopPropagation()}
       >
         {/* Modal Header */}
         <div className="px-6 sm:px-7 py-4 bg-gradient-to-r from-blue-700 via-blue-600 to-indigo-700 text-white flex items-center justify-between shrink-0">
           <div className="flex items-center gap-3.5">
-            <div className="w-12 h-12 rounded-2xl bg-white/20 flex items-center justify-center backdrop-blur-xs shrink-0">
+            <div className="w-12 h-12 rounded-2xl bg-white/20 flex items-center justify-center shrink-0">
               <Tablet className="w-6 h-6 text-white" />
             </div>
             <div>
@@ -371,6 +373,8 @@ export const RentalFormModal: React.FC<RentalFormModalProps> = ({
                       type="number"
                       min="1"
                       max="30"
+                      inputMode="numeric"
+                      autoComplete="off"
                       value={quantity}
                       onChange={(e) => setQuantity(Number(e.target.value))}
                       className="w-full h-13 sm:h-14 text-center text-3xl font-black text-slate-900 rounded-2xl bg-white border-2 border-blue-500 focus:outline-none focus:ring-4 focus:ring-blue-100 shadow-inner"
@@ -562,6 +566,9 @@ export const RentalFormModal: React.FC<RentalFormModalProps> = ({
                     placeholder="예: 3반 실장 김민우"
                     value={studentRep}
                     onChange={(e) => setStudentRep(e.target.value)}
+                    autoComplete="off"
+                    autoCorrect="off"
+                    spellCheck={false}
                     className={`w-full h-13 px-4 rounded-2xl border bg-white text-sm sm:text-base text-slate-900 focus:ring-4 focus:ring-blue-100 shadow-xs ${
                       !studentRep.trim() ? 'border-slate-300' : 'border-blue-500 font-bold'
                     }`}

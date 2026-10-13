@@ -8,5 +8,13 @@
   }
   input, textarea, select {
     user-select: auto;
+    -webkit-transform: translateZ(0);
+    transform: translateZ(0);
+  }
+  /* Prevent Android Chromium GPU layer dropping and black flashing during input focus/IME typing */
+  .fixed {
+    -webkit-backface-visibility: hidden;
+    backface-visibility: hidden;
   }
 }
+

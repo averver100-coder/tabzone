@@ -20,9 +20,10 @@ export function usePWAInstall() {
   });
   const [isInstalled, setIsInstalled] = useState(false);
   const [isIOS, setIsIOS] = useState(false);
+  const [showGalaxyInstallGuide, setShowGalaxyInstallGuide] = useState(false);
 
   useEffect(() => {
-    // Detect standalone mode (already installed)
+    // Detect standalone mode (strictly true ONLY when app is actually running in installed window)
     const checkInstalled = () => {
       const isStandalone =
         window.matchMedia('(display-mode: standalone)').matches ||
@@ -31,6 +32,15 @@ export function usePWAInstall() {
     };
 
     checkInstalled();
+
+    // Listen for display-mode changes (e.g. if opened in standalone)
+    const mediaQuery = window.matchMedia('(display-mode: standalone)');
+    const handleMediaChange = (e: MediaQueryListEvent) => {
+      setIsInstalled(e.matches);
+    };
+    if (mediaQuery.addEventListener) {
+      mediaQuery.addEventListener('change', handleMediaChange);
+    }
 
     // Detect iOS devices
     const userAgent = window.navigator.userAgent.toLowerCase();
@@ -51,9 +61,17 @@ export function usePWAInstall() {
     };
 
     const handleAppInstalled = () => {
-      setIsInstalled(true);
+      // Chrome/Android has queued or finished installation
       setDeferredPrompt(null);
       window.deferredPWAInstallPrompt = null;
+      // If we are still in browser tab, guide user where the icon is placed
+      const isStandalone =
+        window.matchMedia('(display-mode: standalone)').matches ||
+        (window.navigator as unknown as { standalone?: boolean }).standalone === true;
+      setIsInstalled(isStandalone);
+      if (!isStandalone) {
+        setShowGalaxyInstallGuide(true);
+      }
     };
 
     window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
@@ -62,6 +80,9 @@ export function usePWAInstall() {
     window.addEventListener('pwa-installed', handleAppInstalled);
 
     return () => {
+      if (mediaQuery.removeEventListener) {
+        mediaQuery.removeEventListener('change', handleMediaChange);
+      }
       window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
       window.removeEventListener('pwa-prompt-available', handlePromptAvailable);
       window.removeEventListener('appinstalled', handleAppInstalled);
@@ -75,11 +96,12 @@ export function usePWAInstall() {
       await deferredPrompt.prompt();
       const { outcome } = await deferredPrompt.userChoice;
       if (outcome === 'accepted') {
-        setIsInstalled(true);
         setDeferredPrompt(null);
         if (typeof window !== 'undefined') {
           window.deferredPWAInstallPrompt = null;
         }
+        // Show Galaxy Tab / Android post-install guidance
+        setShowGalaxyInstallGuide(true);
         return true;
       }
     } catch (err) {
@@ -88,11 +110,17 @@ export function usePWAInstall() {
     return false;
   };
 
+  const dismissGalaxyInstallGuide = () => {
+    setShowGalaxyInstallGuide(false);
+  };
+
   return {
     deferredPrompt,
     isInstallable: !!deferredPrompt,
     isInstalled,
     isIOS,
+    showGalaxyInstallGuide,
+    dismissGalaxyInstallGuide,
     install,
     setDeferredPrompt,
     setIsInstalled,

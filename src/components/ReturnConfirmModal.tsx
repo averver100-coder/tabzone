@@ -125,12 +125,18 @@ export const ReturnConfirmModal: React.FC<ReturnConfirmModalProps> = ({
   );
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/60 backdrop-blur-xs animate-in fade-in overflow-y-auto">
-      <div className="w-full max-w-xl bg-white rounded-3xl shadow-2xl border border-slate-200 overflow-hidden my-auto max-h-[92vh] flex flex-col">
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-slate-950/75 animate-in fade-in duration-150 overflow-y-auto"
+      style={{ WebkitBackfaceVisibility: 'hidden', backfaceVisibility: 'hidden' }}
+    >
+      <div
+        className="w-full max-w-xl bg-white rounded-3xl shadow-2xl border border-slate-200 overflow-hidden my-auto max-h-[92vh] flex flex-col"
+        style={{ transform: 'translateZ(0)', WebkitTransform: 'translateZ(0)' }}
+      >
         {/* Modal Header (Emerald / Green returning theme) */}
         <div className="px-5 sm:px-6 py-4 bg-gradient-to-r from-emerald-800 via-emerald-700 to-teal-800 text-white flex items-center justify-between shrink-0 shadow-sm">
           <div className="flex items-center gap-3">
-            <div className="w-11 h-11 rounded-2xl bg-white/15 flex items-center justify-center backdrop-blur-xs border border-white/20 shadow-inner">
+            <div className="w-11 h-11 rounded-2xl bg-white/15 flex items-center justify-center border border-white/20 shadow-inner">
               <RotateCcw className="w-6 h-6 text-emerald-200 stroke-[2.5]" />
             </div>
             <div>

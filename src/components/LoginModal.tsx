@@ -88,14 +88,20 @@ export const LoginModal: React.FC<LoginModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs animate-in fade-in">
-      <div className="w-full max-w-md bg-white rounded-3xl shadow-2xl overflow-hidden border border-slate-200/90 relative animate-in zoom-in-95 duration-200">
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/75 animate-in fade-in"
+      style={{ WebkitBackfaceVisibility: 'hidden', backfaceVisibility: 'hidden' }}
+    >
+      <div
+        className="w-full max-w-md bg-white rounded-3xl shadow-2xl overflow-hidden border border-slate-200/90 relative animate-in zoom-in-95 duration-200"
+        style={{ transform: 'translateZ(0)', WebkitTransform: 'translateZ(0)' }}
+      >
         {/* Top Close Button */}
         <button
           type="button"
           onClick={handleClose}
           disabled={isLoggingIn}
-          className="absolute top-4 right-4 z-20 w-9 h-9 rounded-full bg-white/10 hover:bg-white/20 active:scale-95 text-white/90 hover:text-white flex items-center justify-center transition cursor-pointer backdrop-blur-xs disabled:opacity-40"
+          className="absolute top-4 right-4 z-20 w-9 h-9 rounded-full bg-white/10 hover:bg-white/20 active:scale-95 text-white/90 hover:text-white flex items-center justify-center transition cursor-pointer disabled:opacity-40"
           aria-label="닫기"
           title="닫기"
         >
