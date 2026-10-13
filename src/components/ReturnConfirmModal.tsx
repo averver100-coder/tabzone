@@ -208,7 +208,7 @@ export const ReturnConfirmModal: React.FC<ReturnConfirmModalProps> = ({
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1.5">
                 <label className="text-xs sm:text-sm font-black text-slate-800 flex items-center gap-1.5">
                   <ShieldCheck className="w-4 h-4 text-emerald-600" />
-                  <span>반납 승인자 (교육정보부)</span>
+                  <span>반납 승인자</span>
                   <span className="text-rose-600 font-black">*필수</span>
                 </label>
 
@@ -230,13 +230,13 @@ export const ReturnConfirmModal: React.FC<ReturnConfirmModalProps> = ({
               {/* Approvers Selection Radio Grid */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                 {uniqueApprovers.map((appr) => {
-                  const labelText = `${appr.name} (${appr.position})`;
+                  const labelText = appr.name;
                   const isSelected = !isCustomApprover && returnApprover === labelText;
 
                   return (
                     <label
                       key={appr.id}
-                      className={`flex items-center gap-2.5 p-3 rounded-2xl border-2 cursor-pointer transition select-none ${
+                      className={`flex items-center gap-2.5 p-2.5 rounded-xl border-2 cursor-pointer transition select-none ${
                         isSelected
                           ? 'border-emerald-600 bg-emerald-50/80 font-black text-emerald-950 shadow-xs ring-2 ring-emerald-200'
                           : 'border-slate-200 bg-white hover:bg-slate-50 text-slate-700'
@@ -253,9 +253,8 @@ export const ReturnConfirmModal: React.FC<ReturnConfirmModalProps> = ({
                         }}
                         className="w-4 h-4 text-emerald-600 focus:ring-emerald-500 cursor-pointer"
                       />
-                      <div className="truncate">
-                        <div className="font-bold text-slate-900 text-xs sm:text-sm">{appr.name}</div>
-                        <div className="text-[11px] text-slate-500 font-medium">{appr.position}</div>
+                      <div className="font-bold text-slate-900 text-xs sm:text-sm truncate">
+                        {appr.name}
                       </div>
                     </label>
                   );

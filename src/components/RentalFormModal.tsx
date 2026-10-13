@@ -119,7 +119,7 @@ export const RentalFormModal: React.FC<RentalFormModalProps> = ({
 
   const uniqueApprovers = useMemo(() => {
     return Array.from(
-      new Map(approvers.map((a) => [`${a.name?.trim()}__${a.position?.trim()}`, a])).values()
+      new Map(approvers.map((a) => [a.name?.trim(), a])).values()
     );
   }, [approvers]);
 
@@ -200,7 +200,7 @@ export const RentalFormModal: React.FC<RentalFormModalProps> = ({
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-5 bg-black/50 overflow-hidden"
+      className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-3 bg-black/50 overflow-hidden"
       onClick={(e) => {
         if (e.target === e.currentTarget && !isSubmitting) {
           onClose();
@@ -208,43 +208,42 @@ export const RentalFormModal: React.FC<RentalFormModalProps> = ({
       }}
     >
       <div
-        className="w-full max-w-5xl bg-white rounded-3xl shadow-2xl border border-slate-200 overflow-hidden my-auto max-h-[92vh] flex flex-col"
+        className="w-full max-w-3xl bg-white rounded-2xl shadow-2xl border border-slate-200 overflow-hidden my-auto max-h-[96vh] flex flex-col"
         onClick={(e) => e.stopPropagation()}
       >
-        {/* Modal Header */}
-        <div className="px-6 sm:px-7 py-4 bg-gradient-to-r from-blue-700 via-blue-600 to-indigo-700 text-white flex items-center justify-between shrink-0">
-          <div className="flex items-center gap-3.5">
-            <div className="w-12 h-12 rounded-2xl bg-white/20 flex items-center justify-center shrink-0">
-              <Tablet className="w-6 h-6 text-white" />
+        {/* Modal Header (Compact) */}
+        <div className="px-4 py-2 sm:py-2.5 bg-gradient-to-r from-blue-700 via-blue-600 to-indigo-700 text-white flex items-center justify-between shrink-0">
+          <div className="flex items-center gap-2">
+            <div className="w-7 h-7 rounded-lg bg-white/20 flex items-center justify-center shrink-0">
+              <Tablet className="w-3.5 h-3.5 text-white" />
             </div>
             <div>
-              <h2 className="text-xl sm:text-2xl font-black tracking-tight">태블릿 스마트 대여 등록</h2>
-              <p className="text-xs text-blue-100">Galaxy Tab S6 Lite 터치 최적화 키오스크</p>
+              <h2 className="text-sm sm:text-base font-black tracking-tight">태블릿 스마트 대여 등록</h2>
             </div>
           </div>
           <button
             type="button"
             onClick={onClose}
             disabled={isSubmitting}
-            className="w-12 h-12 rounded-2xl text-white/80 hover:text-white hover:bg-white/15 flex items-center justify-center transition active:scale-95 cursor-pointer"
+            className="w-7 h-7 rounded-lg text-white/80 hover:text-white hover:bg-white/15 flex items-center justify-center transition active:scale-95 cursor-pointer"
             aria-label="닫기"
           >
-            <X className="w-6 h-6" />
+            <X className="w-4 h-4" />
           </button>
         </div>
 
-        {/* Modal Body */}
-        <form onSubmit={handleSubmit} className="p-5 sm:p-7 space-y-5 overflow-y-auto flex-1">
+        {/* Modal Body (Single Screen No Scroll Optimized) */}
+        <form onSubmit={handleSubmit} className="p-3 sm:p-4 space-y-2.5 flex-1 overflow-y-auto flex flex-col justify-between">
           {/* Missing Fields Error Alert Notice */}
           {missingFields.length > 0 && (
-            <div className="p-4 sm:p-4.5 rounded-2xl bg-rose-50 border-2 border-rose-300 text-rose-900 space-y-2 animate-in slide-in-from-top-2">
-              <div className="flex items-center gap-2 text-rose-700 font-black text-sm sm:text-base">
-                <AlertCircle className="w-5 h-5 shrink-0" />
-                <span>대여 확정을 위해 다음 미선택 / 미기입 항목을 완료해 주세요</span>
+            <div className="p-2 rounded-xl bg-rose-50 border border-rose-300 text-rose-900 space-y-0.5 animate-in slide-in-from-top-2 shrink-0">
+              <div className="flex items-center gap-1.5 text-rose-700 font-bold text-xs">
+                <AlertCircle className="w-3.5 h-3.5 shrink-0" />
+                <span>다음 항목을 확인해 주세요:</span>
               </div>
-              <ul className="text-xs sm:text-sm text-rose-800 list-disc list-inside space-y-1 font-bold pl-1">
+              <ul className="text-[11px] text-rose-800 list-disc list-inside space-y-0.5 font-bold pl-1">
                 {missingFields.map((field, idx) => (
-                  <li key={idx} className="leading-snug">
+                  <li key={idx} className="leading-tight">
                     <span className="text-rose-950 font-extrabold">{field}</span>
                   </li>
                 ))}
@@ -252,51 +251,51 @@ export const RentalFormModal: React.FC<RentalFormModalProps> = ({
             </div>
           )}
 
-          {/* Galaxy Tab S6 Lite 5:3 Landscape Widescreen 2-Column Grid */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-5 sm:gap-6">
+          {/* 2-Column Grid (sm:grid-cols-2 for Tablet landscape/portrait) */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 sm:gap-3 flex-1">
             {/* Left Column: Cart Selection & Quantity */}
-            <div className="space-y-4">
-              {/* 1. Storage Selection (Auto Recommendation) */}
-              <div className="space-y-2">
+            <div className="space-y-2.5 flex flex-col justify-between">
+              {/* 1. Storage Selection */}
+              <div className="space-y-1">
                 <div className="flex items-center justify-between">
-                  <label className="text-sm font-black text-slate-800 flex items-center gap-1.5">
-                    <Building className="w-4 h-4 text-blue-600" />
-                    <span>대여 보관함 선택</span>
+                  <label className="text-xs font-bold text-slate-800 flex items-center gap-1.5">
+                    <Building className="w-3.5 h-3.5 text-blue-600" />
+                    <span>대여 보관함</span>
                   </label>
-                  <span className="text-xs text-slate-500">
+                  <span className="text-[10px] text-slate-500">
                     교차 대여 권장
                   </span>
                 </div>
 
-                <div className="grid grid-cols-2 gap-3">
+                <div className="grid grid-cols-2 gap-2">
                   {/* Cart 1 Option */}
                   <label
-                    className={`relative flex flex-col p-3.5 sm:p-4 rounded-2xl border-2 cursor-pointer transition-all select-none ${
+                    className={`relative flex flex-col p-2 rounded-xl border-2 cursor-pointer transition-all select-none ${
                       cartUsed === '보관함 1' || cartUsed === 'A보관함'
-                        ? 'border-blue-600 bg-blue-50/80 shadow-sm ring-2 ring-blue-200'
+                        ? 'border-blue-600 bg-blue-50/80 shadow-2xs ring-2 ring-blue-200'
                         : 'border-slate-200 hover:border-slate-300 bg-white'
                     }`}
                   >
-                    <div className="flex items-center justify-between gap-1.5 min-w-0">
-                      <span className="font-black text-slate-900 text-sm sm:text-base flex items-center gap-2 whitespace-nowrap shrink-0">
+                    <div className="flex items-center justify-between gap-1 min-w-0">
+                      <span className="font-bold text-slate-900 text-xs flex items-center gap-1.5 whitespace-nowrap shrink-0">
                         <input
                           type="radio"
                           name="cartRadio"
                           checked={cartUsed === '보관함 1' || cartUsed === 'A보관함'}
                           onChange={() => setCartUsed('보관함 1')}
-                          className="w-4 h-4 sm:w-5 sm:h-5 text-blue-600 focus:ring-blue-500 cursor-pointer shrink-0"
+                          className="w-3.5 h-3.5 text-blue-600 focus:ring-blue-500 cursor-pointer shrink-0"
                         />
                         <span>보관함 1</span>
                       </span>
                       {(recommendedCart === '보관함 1' || recommendedCart === 'A보관함') && (
-                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-blue-600 text-white text-[11px] font-black shrink-0 whitespace-nowrap">
-                          <Sparkles className="w-3 h-3" />
+                        <span className="inline-flex items-center gap-0.5 px-1.5 py-0.2 rounded-full bg-blue-600 text-white text-[9px] font-bold shrink-0 whitespace-nowrap">
+                          <Sparkles className="w-2 h-2" />
                           <span>추천</span>
                         </span>
                       )}
                     </div>
-                    <div className="mt-2 text-xs font-bold text-slate-600 flex justify-between items-center whitespace-nowrap">
-                      <span>잔여 수량</span>
+                    <div className="mt-1 text-[10px] font-bold text-slate-600 flex justify-between items-center whitespace-nowrap">
+                      <span>잔여</span>
                       <span
                         className={
                           cartA.available > 0 ? 'text-blue-700 font-extrabold' : 'text-rose-600 font-extrabold'
@@ -309,32 +308,32 @@ export const RentalFormModal: React.FC<RentalFormModalProps> = ({
 
                   {/* Cart 2 Option */}
                   <label
-                    className={`relative flex flex-col p-3.5 sm:p-4 rounded-2xl border-2 cursor-pointer transition-all select-none ${
+                    className={`relative flex flex-col p-2 rounded-xl border-2 cursor-pointer transition-all select-none ${
                       cartUsed === '보관함 2' || cartUsed === 'B보관함'
-                        ? 'border-emerald-600 bg-emerald-50/80 shadow-sm ring-2 ring-emerald-200'
+                        ? 'border-emerald-600 bg-emerald-50/80 shadow-2xs ring-2 ring-emerald-200'
                         : 'border-slate-200 hover:border-slate-300 bg-white'
                     }`}
                   >
-                    <div className="flex items-center justify-between gap-1.5 min-w-0">
-                      <span className="font-black text-slate-900 text-sm sm:text-base flex items-center gap-2 whitespace-nowrap shrink-0">
+                    <div className="flex items-center justify-between gap-1 min-w-0">
+                      <span className="font-bold text-slate-900 text-xs flex items-center gap-1.5 whitespace-nowrap shrink-0">
                         <input
                           type="radio"
                           name="cartRadio"
                           checked={cartUsed === '보관함 2' || cartUsed === 'B보관함'}
                           onChange={() => setCartUsed('보관함 2')}
-                          className="w-4 h-4 sm:w-5 sm:h-5 text-emerald-600 focus:ring-emerald-500 cursor-pointer shrink-0"
+                          className="w-3.5 h-3.5 text-emerald-600 focus:ring-emerald-500 cursor-pointer shrink-0"
                         />
                         <span>보관함 2</span>
                       </span>
                       {(recommendedCart === '보관함 2' || recommendedCart === 'B보관함') && (
-                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-600 text-white text-[11px] font-black shrink-0 whitespace-nowrap">
-                          <Sparkles className="w-3 h-3" />
+                        <span className="inline-flex items-center gap-0.5 px-1.5 py-0.2 rounded-full bg-emerald-600 text-white text-[9px] font-bold shrink-0 whitespace-nowrap">
+                          <Sparkles className="w-2 h-2" />
                           <span>추천</span>
                         </span>
                       )}
                     </div>
-                    <div className="mt-2 text-xs font-bold text-slate-600 flex justify-between items-center whitespace-nowrap">
-                      <span>잔여 수량</span>
+                    <div className="mt-1 text-[10px] font-bold text-slate-600 flex justify-between items-center whitespace-nowrap">
+                      <span>잔여</span>
                       <span
                         className={
                           cartB.available > 0 ? 'text-emerald-700 font-extrabold' : 'text-rose-600 font-extrabold'
@@ -347,24 +346,24 @@ export const RentalFormModal: React.FC<RentalFormModalProps> = ({
                 </div>
               </div>
 
-              {/* 2. Quantity Selector (Presets 10, 15, 20, 25, 30) */}
-              <div className="p-4 sm:p-5 rounded-2xl bg-slate-50 border border-slate-200/90 space-y-3.5 select-none">
+              {/* 2. Quantity Selector (Compact) */}
+              <div className="p-2.5 rounded-xl bg-slate-50 border border-slate-200/90 space-y-1.5 select-none">
                 <div className="flex items-center justify-between">
-                  <label className="text-sm font-black text-slate-800 flex items-center gap-1.5">
-                    <Tablet className="w-4 h-4 text-blue-600" />
-                    <span>대여 수량 선택</span>
+                  <label className="text-xs font-bold text-slate-800 flex items-center gap-1.5">
+                    <Tablet className="w-3.5 h-3.5 text-blue-600" />
+                    <span>대여 수량</span>
                   </label>
-                  <span className="text-xs text-slate-500">
-                    선택 보관함 최대 잔여: <strong className="text-slate-900">{currentCartAvailable}대</strong>
+                  <span className="text-[10px] text-slate-500">
+                    최대 가능: <strong className="text-slate-900">{currentCartAvailable}대</strong>
                   </span>
                 </div>
 
-                {/* Touch Stepper (Height 56px / 14) */}
-                <div className="flex items-center gap-2.5 sm:gap-3">
+                {/* Touch Stepper */}
+                <div className="flex items-center gap-1.5">
                   <button
                     type="button"
                     onClick={() => handleQuantityAdjust(-5)}
-                    className="w-13 sm:w-14 h-13 sm:h-14 rounded-2xl bg-white border border-slate-300 hover:bg-slate-100 active:scale-95 text-slate-700 font-black text-sm flex items-center justify-center transition cursor-pointer shadow-xs"
+                    className="w-8 h-8 rounded-lg bg-white border border-slate-300 hover:bg-slate-100 active:scale-95 text-slate-700 font-black text-xs flex items-center justify-center transition cursor-pointer shadow-2xs"
                     title="5대 감소"
                   >
                     -5
@@ -372,10 +371,10 @@ export const RentalFormModal: React.FC<RentalFormModalProps> = ({
                   <button
                     type="button"
                     onClick={() => handleQuantityAdjust(-1)}
-                    className="w-13 sm:w-14 h-13 sm:h-14 rounded-2xl bg-white border border-slate-300 hover:bg-slate-100 active:scale-95 text-slate-700 font-black text-base flex items-center justify-center transition cursor-pointer shadow-xs"
+                    className="w-8 h-8 rounded-lg bg-white border border-slate-300 hover:bg-slate-100 active:scale-95 text-slate-700 font-black text-xs flex items-center justify-center transition cursor-pointer shadow-2xs"
                     title="1대 감소"
                   >
-                    <Minus className="w-5 h-5 stroke-[2.5]" />
+                    <Minus className="w-3.5 h-3.5 stroke-[2.5]" />
                   </button>
 
                   <div className="flex-1 relative">
@@ -387,9 +386,9 @@ export const RentalFormModal: React.FC<RentalFormModalProps> = ({
                       autoComplete="off"
                       value={quantity}
                       onChange={(e) => setQuantity(Number(e.target.value))}
-                      className="w-full h-13 sm:h-14 text-center text-3xl font-black text-slate-900 rounded-2xl bg-white border-2 border-blue-500 focus:outline-none focus:ring-4 focus:ring-blue-100 shadow-inner"
+                      className="w-full h-8 text-center text-lg sm:text-xl font-black text-slate-900 rounded-lg bg-white border-2 border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-100 shadow-inner"
                     />
-                    <span className="absolute right-4 top-1/2 -translate-y-1/2 text-sm font-black text-slate-400">
+                    <span className="absolute right-2.5 top-1/2 -translate-y-1/2 text-xs font-bold text-slate-400">
                       대
                     </span>
                   </div>
@@ -397,75 +396,71 @@ export const RentalFormModal: React.FC<RentalFormModalProps> = ({
                   <button
                     type="button"
                     onClick={() => handleQuantityAdjust(1)}
-                    className="w-13 sm:w-14 h-13 sm:h-14 rounded-2xl bg-white border border-slate-300 hover:bg-slate-100 active:scale-95 text-slate-700 font-black text-base flex items-center justify-center transition cursor-pointer shadow-xs"
+                    className="w-8 h-8 rounded-lg bg-white border border-slate-300 hover:bg-slate-100 active:scale-95 text-slate-700 font-black text-xs flex items-center justify-center transition cursor-pointer shadow-2xs"
                     title="1대 증가"
                   >
-                    <Plus className="w-5 h-5 stroke-[2.5]" />
+                    <Plus className="w-3.5 h-3.5 stroke-[2.5]" />
                   </button>
                   <button
                     type="button"
                     onClick={() => handleQuantityAdjust(5)}
-                    className="w-13 sm:w-14 h-13 sm:h-14 rounded-2xl bg-white border border-slate-300 hover:bg-slate-100 active:scale-95 text-slate-700 font-black text-sm flex items-center justify-center transition cursor-pointer shadow-xs"
+                    className="w-8 h-8 rounded-lg bg-white border border-slate-300 hover:bg-slate-100 active:scale-95 text-slate-700 font-black text-xs flex items-center justify-center transition cursor-pointer shadow-2xs"
                     title="5대 증가"
                   >
                     +5
                   </button>
                 </div>
 
-                {/* Quick Presets: 10대, 15대, 20대, 25대, 30대 (Large Touch Pills) */}
-                <div className="pt-1">
-                  <div className="text-xs font-bold text-slate-500 mb-2">빠른 수량 선택:</div>
-                  <div className="grid grid-cols-5 gap-2">
-                    {QUICK_PRESETS.map((preset) => (
-                      <button
-                        key={preset}
-                        type="button"
-                        onClick={() => setQuantity(preset)}
-                        className={`h-11 rounded-xl text-sm font-black transition active:scale-95 cursor-pointer flex items-center justify-center ${
-                          quantity === preset
-                            ? 'bg-blue-600 text-white shadow-md shadow-blue-600/30 ring-2 ring-blue-300'
-                            : 'bg-white border border-slate-300 text-slate-700 hover:bg-slate-100'
-                        }`}
-                      >
-                        {preset}대
-                      </button>
-                    ))}
-                  </div>
+                {/* Quick Presets */}
+                <div className="grid grid-cols-5 gap-1 pt-0.5">
+                  {QUICK_PRESETS.map((preset) => (
+                    <button
+                      key={preset}
+                      type="button"
+                      onClick={() => setQuantity(preset)}
+                      className={`h-6.5 rounded-md text-[11px] font-bold transition active:scale-95 cursor-pointer flex items-center justify-center ${
+                        quantity === preset
+                          ? 'bg-blue-600 text-white shadow-2xs ring-1 ring-blue-300'
+                          : 'bg-white border border-slate-300 text-slate-700 hover:bg-slate-100'
+                      }`}
+                    >
+                      {preset}대
+                    </button>
+                  ))}
                 </div>
               </div>
             </div>
 
             {/* Right Column: Period, Grade/Class, Teacher, Student, Approver */}
-            <div className="space-y-4">
+            <div className="space-y-2 flex flex-col justify-between">
               {/* 3. Period Selection */}
-              <div className="space-y-1.5">
+              <div className="space-y-1">
                 <div className="flex items-center justify-between">
-                  <label className="text-sm font-black text-slate-800 flex items-center gap-1.5">
-                    <Clock className="w-4 h-4 text-blue-600" />
-                    <span>사용 교시 (시종표 기준)</span>
+                  <label className="text-xs font-bold text-slate-800 flex items-center gap-1.5">
+                    <Clock className="w-3.5 h-3.5 text-blue-600" />
+                    <span>사용 교시</span>
                   </label>
                   <button
                     type="button"
                     onClick={() => setShowTimetableInfo(!showTimetableInfo)}
-                    className="text-xs text-blue-600 hover:text-blue-800 font-bold flex items-center gap-1 cursor-pointer py-1 px-2 rounded-lg hover:bg-blue-50"
+                    className="text-[10px] text-blue-600 hover:text-blue-800 font-bold flex items-center gap-0.5 cursor-pointer py-0.2 px-1 rounded hover:bg-blue-50"
                   >
-                    <Info className="w-3.5 h-3.5" />
+                    <Info className="w-3 h-3" />
                     <span>시간표 보기</span>
                   </button>
                 </div>
 
                 {showTimetableInfo && (
-                  <div className="p-3 bg-blue-50 border border-blue-200 rounded-2xl text-xs text-blue-900 space-y-1 animate-in fade-in">
-                    <div className="font-bold text-blue-950 flex items-center justify-between">
-                      <span>※ 교내 시종표 운영 기준 (매시간 50분 운영)</span>
-                      <span className="text-[11px] text-blue-700">월·화 7교시 / 수·목·금 6교시</span>
+                  <div className="p-1.5 bg-blue-50 border border-blue-200 rounded-lg text-xs text-blue-900 space-y-0.5 animate-in fade-in">
+                    <div className="font-bold text-blue-950 flex items-center justify-between text-[10px]">
+                      <span>※ 교내 시종표 기준 (50분 운영)</span>
+                      <span className="text-blue-700">월·화 7교시 / 수·목·금 6교시</span>
                     </div>
-                    <div className="grid grid-cols-2 gap-1 pt-1 text-slate-700 font-mono text-[11px]">
+                    <div className="grid grid-cols-2 gap-0.5 text-slate-700 font-mono text-[9px]">
                       <span>1교시: 08:30~09:20</span>
                       <span>2교시: 09:30~10:20</span>
                       <span>3교시: 10:30~11:20</span>
                       <span>4교시: 11:30~12:20</span>
-                      <span>점심: 12:20~13:20</span>
                       <span>5교시: 13:20~14:10</span>
                       <span>6교시: 14:20~15:10</span>
                       <span>7교시: 15:20~16:10</span>
@@ -476,7 +471,7 @@ export const RentalFormModal: React.FC<RentalFormModalProps> = ({
                 <select
                   value={period}
                   onChange={(e) => setPeriod(e.target.value)}
-                  className={`w-full h-13 px-4 rounded-2xl border bg-white text-sm sm:text-base font-bold text-slate-800 focus:ring-4 focus:ring-blue-100 cursor-pointer shadow-xs ${
+                  className={`w-full h-8 px-2.5 rounded-lg border bg-white text-xs font-bold text-slate-800 focus:ring-2 focus:ring-blue-100 cursor-pointer shadow-2xs ${
                     !period ? 'border-slate-300 text-slate-400' : 'border-blue-500'
                   }`}
                 >
@@ -489,18 +484,17 @@ export const RentalFormModal: React.FC<RentalFormModalProps> = ({
                 </select>
               </div>
 
-              {/* 4. Grade and Class - SPLIT DROPDOWNS (1, 2, 3학년 ONLY) */}
-              <div className="grid grid-cols-2 gap-3">
-                {/* Grade Dropdown */}
-                <div className="space-y-1.5">
-                  <label className="text-xs sm:text-sm font-black text-slate-700 flex items-center gap-1.5">
-                    <Users className="w-4 h-4 text-blue-600" />
-                    <span>학년 선택</span>
+              {/* 4. Grade and Class */}
+              <div className="grid grid-cols-2 gap-2">
+                <div className="space-y-0.5">
+                  <label className="text-[11px] font-bold text-slate-700 flex items-center gap-1">
+                    <Users className="w-3 h-3 text-blue-600" />
+                    <span>학년</span>
                   </label>
                   <select
                     value={grade}
                     onChange={(e) => handleGradeChange(e.target.value)}
-                    className={`w-full h-13 px-4 rounded-2xl border bg-white text-sm sm:text-base font-bold text-slate-800 focus:ring-4 focus:ring-blue-100 cursor-pointer shadow-xs ${
+                    className={`w-full h-8 px-2.5 rounded-lg border bg-white text-xs font-bold text-slate-800 focus:ring-2 focus:ring-blue-100 cursor-pointer shadow-2xs ${
                       !grade ? 'border-slate-300 text-slate-400' : 'border-blue-500'
                     }`}
                   >
@@ -511,22 +505,21 @@ export const RentalFormModal: React.FC<RentalFormModalProps> = ({
                   </select>
                 </div>
 
-                {/* Class Dropdown */}
-                <div className="space-y-1.5">
-                  <label className="text-xs sm:text-sm font-black text-slate-700 flex items-center gap-1.5">
-                    <Building className="w-4 h-4 text-blue-600" />
-                    <span>반 선택</span>
+                <div className="space-y-0.5">
+                  <label className="text-[11px] font-bold text-slate-700 flex items-center gap-1">
+                    <Building className="w-3 h-3 text-blue-600" />
+                    <span>반</span>
                   </label>
                   <select
                     value={classNum}
                     disabled={!grade}
                     onChange={(e) => setClassNum(e.target.value)}
-                    className={`w-full h-13 px-4 rounded-2xl border bg-white text-sm sm:text-base font-bold text-slate-800 focus:ring-4 focus:ring-blue-100 shadow-xs ${
+                    className={`w-full h-8 px-2.5 rounded-lg border bg-white text-xs font-bold text-slate-800 focus:ring-2 focus:ring-blue-100 shadow-2xs ${
                       !classNum ? 'border-slate-300 text-slate-400' : 'border-blue-500'
                     } ${!grade ? 'bg-slate-100 opacity-60 cursor-not-allowed' : 'cursor-pointer'}`}
                   >
                     <option value="">
-                      {grade ? `${grade} 반 선택` : '먼저 학년 선택'}
+                      {grade ? `${grade} 반 선택` : '학년 먼저'}
                     </option>
                     {availableClasses.map((c) => (
                       <option key={c} value={c} className="text-slate-800">
@@ -538,22 +531,21 @@ export const RentalFormModal: React.FC<RentalFormModalProps> = ({
               </div>
 
               {/* 5. Teacher & Student Representative */}
-              <div className="grid grid-cols-2 gap-3">
-                {/* Teacher Dropdown */}
-                <div className="space-y-1.5">
-                  <label className="text-xs sm:text-sm font-black text-slate-700 flex items-center gap-1.5">
-                    <User className="w-4 h-4 text-blue-600" />
+              <div className="grid grid-cols-2 gap-2">
+                <div className="space-y-0.5">
+                  <label className="text-[11px] font-bold text-slate-700 flex items-center gap-1">
+                    <User className="w-3 h-3 text-blue-600" />
                     <span>담당 교사</span>
                   </label>
                   <select
                     value={teacherName}
                     onChange={(e) => setTeacherName(e.target.value)}
-                    className={`w-full h-13 px-3.5 rounded-2xl border bg-white text-sm sm:text-base font-bold text-slate-800 focus:ring-4 focus:ring-blue-100 cursor-pointer shadow-xs ${
+                    className={`w-full h-8 px-2.5 rounded-lg border bg-white text-xs font-bold text-slate-800 focus:ring-2 focus:ring-blue-100 cursor-pointer shadow-2xs ${
                       !teacherName ? 'border-slate-300 text-slate-400' : 'border-blue-500'
                     }`}
                   >
                     <option value="">
-                      {teachers.length > 0 ? '담당 교사 선택' : '교사 미등록'}
+                      {teachers.length > 0 ? '교사 선택' : '미등록'}
                     </option>
                     {uniqueTeachers.map((t) => (
                       <option key={t.id} value={`${t.name} (${t.subject})`} className="text-slate-800">
@@ -563,50 +555,48 @@ export const RentalFormModal: React.FC<RentalFormModalProps> = ({
                   </select>
                 </div>
 
-                {/* Student Representative */}
-                <div className="space-y-1.5">
-                  <label className="text-xs sm:text-sm font-black text-slate-700 flex items-center gap-1.5">
-                    <Users className="w-4 h-4 text-blue-600" />
+                <div className="space-y-0.5">
+                  <label className="text-[11px] font-bold text-slate-700 flex items-center gap-1">
+                    <Users className="w-3 h-3 text-blue-600" />
                     <span>학생 대표</span>
                   </label>
                   <input
                     type="text"
-                    placeholder="예: 3반 실장 김민우"
+                    placeholder="예: 실장 김민우"
                     value={studentRep}
                     onChange={(e) => setStudentRep(e.target.value)}
                     autoComplete="off"
                     autoCorrect="off"
                     spellCheck={false}
-                    className="w-full h-13 px-4 rounded-2xl border border-slate-300 focus:border-blue-500 focus:ring-4 focus:ring-blue-100 bg-white text-sm sm:text-base text-slate-900 shadow-xs outline-none font-bold"
+                    className="w-full h-8 px-2.5 rounded-lg border border-slate-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-100 bg-white text-xs text-slate-900 shadow-2xs outline-none font-bold"
                   />
                 </div>
               </div>
 
-              {/* 6. Approver Selection */}
-              <div className="space-y-2 pt-1 border-t border-slate-100">
+              {/* 6. Approver Selection (이름 아래 부서명 삭제 & 콤팩트 라디오) */}
+              <div className="space-y-1 pt-1 border-t border-slate-100">
                 <div className="flex items-center justify-between">
-                  <label className="text-xs sm:text-sm font-black text-slate-800 flex items-center gap-1.5">
-                    <ShieldCheck className="w-4 h-4 text-purple-600" />
-                    <span>대여 승인자 (교육정보부)</span>
+                  <label className="text-xs font-bold text-slate-800 flex items-center gap-1.5">
+                    <ShieldCheck className="w-3.5 h-3.5 text-purple-600" />
+                    <span>대여 승인자</span>
                   </label>
                 </div>
 
                 {approvers.length === 0 ? (
-                  <div className="text-xs text-slate-500 p-3 bg-slate-50 border border-slate-200 rounded-2xl text-center">
+                  <div className="text-[11px] text-slate-500 p-1.5 bg-slate-50 border border-slate-200 rounded-lg text-center">
                     등록된 대여 승인자가 없습니다.
                   </div>
                 ) : (
-                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-1">
                     {uniqueApprovers.map((appr) => {
-                      const labelText = `${appr.name} (${appr.position})`;
-                      const isSelected = approver === labelText;
+                      const isSelected = approver === appr.name;
 
                       return (
                         <label
                           key={appr.id}
-                          className={`flex items-center gap-2.5 p-3 rounded-2xl border-2 cursor-pointer transition select-none ${
+                          className={`flex items-center gap-1.5 px-2 py-1 rounded-lg border cursor-pointer transition select-none ${
                             isSelected
-                              ? 'border-purple-600 bg-purple-50/80 font-black text-purple-950 shadow-xs ring-2 ring-purple-200'
+                              ? 'border-purple-600 bg-purple-50 font-black text-purple-950 shadow-2xs ring-1 ring-purple-200'
                               : 'border-slate-200 bg-white hover:bg-slate-50 text-slate-700'
                           }`}
                         >
@@ -614,13 +604,12 @@ export const RentalFormModal: React.FC<RentalFormModalProps> = ({
                             type="radio"
                             name="approverRadio"
                             checked={isSelected}
-                            onChange={() => setApprover(labelText)}
-                            className="w-4 h-4 text-purple-600 focus:ring-purple-500 cursor-pointer"
+                            onChange={() => setApprover(appr.name)}
+                            className="w-3 h-3 text-purple-600 focus:ring-purple-500 cursor-pointer shrink-0"
                           />
-                          <div className="truncate">
-                            <div className="font-bold text-slate-900 text-xs sm:text-sm">{appr.name}</div>
-                            <div className="text-[11px] text-slate-500 font-medium">{appr.position}</div>
-                          </div>
+                          <span className="font-bold text-slate-900 text-xs truncate">
+                            {appr.name}
+                          </span>
                         </label>
                       );
                     })}
@@ -630,29 +619,29 @@ export const RentalFormModal: React.FC<RentalFormModalProps> = ({
             </div>
           </div>
 
-          {/* Footer Submit (Height 56px / 14 buttons) */}
-          <div className="pt-4 flex items-center justify-end gap-3.5 border-t border-slate-100 shrink-0">
+          {/* Footer Submit Bar (스크롤 없이 즉시 확정) */}
+          <div className="pt-2 flex items-center justify-end gap-2 border-t border-slate-100 shrink-0">
             <button
               type="button"
               onClick={onClose}
               disabled={isSubmitting}
-              className="h-14 px-8 rounded-2xl bg-slate-100 hover:bg-slate-200 active:scale-95 text-slate-700 font-bold text-base transition cursor-pointer"
+              className="h-9 px-4 rounded-xl bg-slate-100 hover:bg-slate-200 active:scale-95 text-slate-700 font-bold text-xs transition cursor-pointer"
             >
               취소
             </button>
             <button
               type="submit"
               disabled={isSubmitting}
-              className="flex-1 sm:flex-none h-14 px-10 rounded-2xl bg-gradient-to-r from-blue-600 via-indigo-600 to-blue-700 hover:from-blue-700 hover:to-indigo-700 active:scale-95 text-white font-black text-base sm:text-lg shadow-xl shadow-blue-600/30 flex items-center justify-center gap-3 transition cursor-pointer disabled:opacity-50"
+              className="flex-1 sm:flex-none h-9 sm:h-9.5 px-6 rounded-xl bg-gradient-to-r from-blue-600 via-indigo-600 to-blue-700 hover:from-blue-700 hover:to-indigo-700 active:scale-95 text-white font-bold text-xs sm:text-sm shadow-md shadow-blue-600/30 flex items-center justify-center gap-1.5 transition cursor-pointer disabled:opacity-50"
             >
               {isSubmitting ? (
                 <>
-                  <Loader2 className="w-5 h-5 animate-spin" />
+                  <Loader2 className="w-3.5 h-3.5 animate-spin" />
                   <span>대여 기록 등록 중...</span>
                 </>
               ) : (
                 <>
-                  <Check className="w-5 h-5 stroke-[3]" />
+                  <Check className="w-3.5 h-3.5 stroke-[3]" />
                   <span>태블릿 {quantity}대 대여 확정하기</span>
                 </>
               )}

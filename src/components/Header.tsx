@@ -5,6 +5,7 @@ import {
   LogOut,
   Maximize2,
   Minimize2,
+  Plus,
   Settings,
   ShieldCheck,
   UserCheck,
@@ -20,6 +21,7 @@ interface HeaderProps {
   onOpenAuditLogs: () => void;
   onLogout: () => void;
   isPast1630: boolean;
+  onOpenRentalModal?: () => void;
 }
 
 export const Header: React.FC<HeaderProps> = ({
@@ -29,6 +31,7 @@ export const Header: React.FC<HeaderProps> = ({
   onOpenAuditLogs,
   onLogout,
   isPast1630,
+  onOpenRentalModal,
 }) => {
   const [currentTime, setCurrentTime] = useState<string>('');
   const [isFullscreen, setIsFullscreen] = useState(false);
@@ -116,6 +119,17 @@ export const Header: React.FC<HeaderProps> = ({
 
         {/* Action Controls & User Account */}
         <div className="flex items-center gap-2 sm:gap-2.5 shrink-0">
+          {onOpenRentalModal && (
+            <button
+              type="button"
+              onClick={onOpenRentalModal}
+              className="flex items-center gap-1.5 h-11 sm:h-12 px-3.5 sm:px-4 rounded-2xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 active:scale-95 text-white text-xs sm:text-sm font-black shadow-md shadow-blue-600/20 transition cursor-pointer shrink-0 whitespace-nowrap"
+            >
+              <Plus className="w-4 h-4 stroke-[3]" />
+              <span>태블릿 대여</span>
+            </button>
+          )}
+
           <PWAInstallButton />
 
           {/* Fullscreen kiosk button (Touch target 48px) */}
