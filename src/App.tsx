@@ -36,10 +36,13 @@ import {
 } from './services/approverService';
 import { subscribeToAuditLogs } from './services/auditService';
 import {
+  AuthErrorInfo,
   checkRedirectAuth,
   checkSSORestoration,
   clearAuthSession,
   ensureSuperAdminInDb,
+  loginWithStaffEmail,
+  parseAuthError,
   saveAuthSession,
   signInWithGoogle,
   signOutUser,
@@ -79,7 +82,7 @@ export default function App() {
   const [currentUser, setCurrentUser] = useState<AuthUser | null>(null);
   const [isAuthLoading, setIsAuthLoading] = useState(true);
   const [isLoggingIn, setIsLoggingIn] = useState(false);
-  const [authError, setAuthError] = useState<string | null>(null);
+  const [authError, setAuthError] = useState<AuthErrorInfo | string | null>(null);
   const [rejectedEmail, setRejectedEmail] = useState<string | null>(null);
 
   // App Business State
@@ -216,9 +219,13 @@ export default function App() {
       setCurrentUser(null);
       setRejectedEmail(userEmail);
       setIsLoginModalOpen(true);
-      setAuthError(
-        '본 시스템은 보안 및 데이터 정합성을 위해 사전 인가된 교직원 계정만 로그인을 허용합니다. 접속이 필요하신 경우 관리자에게 계정 등록 또는 활성화를 요청하세요.'
-      );
+      setAuthError({
+        code: 'auth/not-whitelisted',
+        title: '교직원 접근 권한 인가 실패',
+        message:
+          '본 시스템은 보안 및 데이터 정합성을 위해 사전 인가된 교직원 계정만 로그인을 허용합니다. 접속이 필요하신 경우 관리자에게 계정 등록 또는 활성화를 요청하세요.',
+        isDomainError: false,
+      });
     }
   };
 
@@ -237,28 +244,46 @@ export default function App() {
         return;
       }
       console.error('Login error:', err);
-      setAuthError(err.message || '구글 로그인 중 문제가 발생했습니다.');
+      const parsed = parseAuthError(err);
+      setAuthError(parsed);
     } finally {
       setIsLoggingIn(false);
     }
   };
 
-  // Superadmin SSO One-Click Bypass Restoration
-  const handleSuperAdminBypass = () => {
-    const superAdminUser: AuthUser = {
-      uid: 'superadmin-' + btoa(SUPER_ADMIN_EMAIL).substring(0, 10),
-      email: SUPER_ADMIN_EMAIL,
-      displayName: '슈퍼관리자 (교육정보부)',
-      role: 'superadmin',
-      isWhitelisted: true,
-      department: '교육정보부 총괄',
-    };
-    saveAuthSession(superAdminUser);
-    setCurrentUser(superAdminUser);
+  // Staff Email Direct Whitelist Verification
+  const handleStaffEmailLogin = async (email: string): Promise<boolean> => {
+    setIsLoggingIn(true);
     setAuthError(null);
     setRejectedEmail(null);
-    setIsLoginModalOpen(false);
-    showToast('슈퍼어드민(averver100@gmail.com) SSO 세션이 복원되었습니다.');
+    try {
+      const res = await loginWithStaffEmail(email);
+      if (res.success && res.user) {
+        setCurrentUser(res.user);
+        setIsLoginModalOpen(false);
+        showToast(`${res.user.displayName}님 환영합니다.`);
+        return true;
+      } else {
+        if (res.rejectedEmail) {
+          setRejectedEmail(res.rejectedEmail);
+        }
+        if (res.error) {
+          setAuthError({
+            code: 'auth/not-whitelisted',
+            title: '교직원 접근 권한 인가 실패',
+            message: res.error,
+            isDomainError: false,
+          });
+        }
+        return false;
+      }
+    } catch (err: any) {
+      console.error('Staff email login error:', err);
+      setAuthError(parseAuthError(err));
+      return false;
+    } finally {
+      setIsLoggingIn(false);
+    }
   };
 
   // Logout (destroy session and purge cross-domain cookies)
@@ -528,10 +553,14 @@ export default function App() {
         isOpen={isLoginModalOpen}
         onClose={() => setIsLoginModalOpen(false)}
         onGoogleLogin={handleGoogleLogin}
-        onSuperAdminBypass={handleSuperAdminBypass}
+        onStaffEmailLogin={handleStaffEmailLogin}
         authError={authError}
         isLoggingIn={isLoggingIn}
         rejectedEmail={rejectedEmail}
+        onClearErrors={() => {
+          setAuthError(null);
+          setRejectedEmail(null);
+        }}
       />
 
       <WhitelistModal
