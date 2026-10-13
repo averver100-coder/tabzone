@@ -1,0 +1,12 @@
+@import "tailwindcss";
+
+@layer base {
+  html, body {
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
+    user-select: none;
+  }
+  input, textarea, select {
+    user-select: auto;
+  }
+}

@@ -1,0 +1,62 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function isValidId(id) {
+      return id is string && id.size() > 0 && id.size() <= 128;
+    }
+
+    // Rentals collection
+    match /rentals/{rentalId} {
+      allow read: if true;
+      allow create: if isValidId(rentalId)
+        && request.resource.data.quantity is number
+        && request.resource.data.quantity >= 1
+        && request.resource.data.quantity <= 30
+        && request.resource.data.status in ['대여 중', '반납 완료']
+        && request.resource.data.cartUsed in ['A보관함', 'B보관함'];
+      allow update: if request.resource.data.status in ['대여 중', '반납 완료'];
+      allow delete: if true;
+    }
+
+    // Whitelist collection
+    match /whitelist/{userId} {
+      allow read: if true;
+      allow create, update: if isValidId(userId);
+      // Delete allowed for all except the permanent superadmin doc
+      allow delete: if userId != 'averver100_gmail_com';
+    }
+
+    // Teachers collection
+    match /teachers/{teacherId} {
+      allow read: if true;
+      allow create, update: if isValidId(teacherId);
+      allow delete: if true;
+    }
+
+    // Approvers collection
+    match /approvers/{approverId} {
+      allow read: if true;
+      allow create, update: if isValidId(approverId);
+      allow delete: if true;
+    }
+
+    // Audit logs collection (Append-only)
+    match /audit_logs/{logId} {
+      allow read: if true;
+      allow create: if isValidId(logId)
+        && request.resource.data.userEmail is string;
+      allow update, delete: if false; // Audit logs are immutable
+    }
+
+    // Test connection doc
+    match /test/connection {
+      allow read: if true;
+    }
+
+    // Default catch-all
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

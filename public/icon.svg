@@ -1,0 +1,69 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <defs>
+    <linearGradient id="shieldBg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#1e3a8a" />
+      <stop offset="50%" stop-color="#2563eb" />
+      <stop offset="100%" stop-color="#0284c7" />
+    </linearGradient>
+    <linearGradient id="shieldBorder" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#60a5fa" />
+      <stop offset="50%" stop-color="#93c5fd" />
+      <stop offset="100%" stop-color="#38bdf8" />
+    </linearGradient>
+    <linearGradient id="tabletGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#ffffff" />
+      <stop offset="100%" stop-color="#e2e8f0" />
+    </linearGradient>
+    <linearGradient id="screenGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#0f172a" />
+      <stop offset="100%" stop-color="#1e293b" />
+    </linearGradient>
+    <filter id="glow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="8" stdDeviation="16" flood-color="#1d4ed8" flood-opacity="0.4" />
+    </filter>
+  </defs>
+
+  <!-- Background Shield Shadow & Body -->
+  <path d="M256 36 C352 76 432 76 448 84 C454 196 442 344 256 476 C70 344 58 196 64 84 C80 76 160 76 256 36 Z" 
+        fill="url(#shieldBg)" 
+        stroke="url(#shieldBorder)" 
+        stroke-width="12" 
+        stroke-linejoin="round"
+        filter="url(#glow)" />
+
+  <!-- Inner Shield Trim Line -->
+  <path d="M256 58 C342 94 414 94 428 100 C434 196 422 328 256 448 C90 328 78 196 84 100 C98 94 170 94 256 58 Z" 
+        fill="none" 
+        stroke="#ffffff" 
+        stroke-opacity="0.25" 
+        stroke-width="4" />
+
+  <!-- Stylized Tablet Body inside Shield -->
+  <g transform="translate(146, 126)">
+    <!-- Outer tablet bezel -->
+    <rect x="0" y="0" width="220" height="260" rx="28" fill="url(#tabletGrad)" />
+    <!-- Screen area -->
+    <rect x="14" y="24" width="192" height="212" rx="14" fill="url(#screenGrad)" />
+    
+    <!-- Screen Camera -->
+    <circle cx="110" cy="12" r="3.5" fill="#64748b" />
+    
+    <!-- Screen Content: Storage Racks A and B -->
+    <rect x="36" y="56" width="36" height="52" rx="8" fill="#38bdf8" fill-opacity="0.9" />
+    <text x="54" y="88" font-family="sans-serif" font-weight="900" font-size="22" fill="#ffffff" text-anchor="middle">A</text>
+
+    <rect x="84" y="56" width="36" height="52" rx="8" fill="#34d399" fill-opacity="0.9" />
+    <text x="102" y="88" font-family="sans-serif" font-weight="900" font-size="22" fill="#ffffff" text-anchor="middle">B</text>
+
+    <rect x="132" y="56" width="52" height="52" rx="8" fill="#818cf8" fill-opacity="0.9" />
+    <path d="M148 82 L156 90 L172 74" fill="none" stroke="#ffffff" stroke-width="5" stroke-linecap="round" stroke-linejoin="round" />
+
+    <!-- TabZone Title Graphic on Screen -->
+    <text x="110" y="152" font-family="'Pretendard', sans-serif" font-weight="900" font-size="26" fill="#f8fafc" text-anchor="middle" letter-spacing="1">TABZONE</text>
+    <text x="110" y="180" font-family="'Pretendard', sans-serif" font-weight="700" font-size="14" fill="#38bdf8" text-anchor="middle">스마트 태블릿</text>
+
+    <!-- Bottom Indicator -->
+    <rect x="80" y="212" width="60" height="4" rx="2" fill="#94a3b8" />
+    <circle cx="110" cy="248" r="4.5" fill="#94a3b8" />
+  </g>
+</svg>

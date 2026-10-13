@@ -1,0 +1,6 @@
+{
+  "name": "탭존 (TabZone) - 스마트 태블릿 대여 관리",
+  "description": "학교 현장을 위한 직관적인 태블릿 대여 및 반납 키오스크 시스템",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

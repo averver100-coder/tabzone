@@ -1,0 +1,234 @@
+{
+  "entities": {
+    "Rental": {
+      "title": "Rental",
+      "description": "교내 태블릿 보관함 대여 및 반납 기록",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "대여 고유 식별자"
+        },
+        "period": {
+          "type": "string",
+          "description": "사용 교시 (1~7교시, 방과후 등)",
+          "maxLength": 50
+        },
+        "gradeClass": {
+          "type": "string",
+          "description": "학년 및 반 (예: 2학년 3반)",
+          "maxLength": 50
+        },
+        "teacherName": {
+          "type": "string",
+          "description": "수업 책임 담당 교사 이름",
+          "maxLength": 50
+        },
+        "studentRep": {
+          "type": "string",
+          "description": "수령 학생 대표 텍스트 메모 (필수 입력)",
+          "maxLength": 50
+        },
+        "cartUsed": {
+          "type": "string",
+          "description": "사용 보관함 (A보관함 또는 B보관함)",
+          "enum": ["A보관함", "B보관함"]
+        },
+        "quantity": {
+          "type": "number",
+          "description": "대여 수량 (1~30)"
+        },
+        "approver": {
+          "type": "string",
+          "description": "대여 승인 교직원 (필수 선택)",
+          "maxLength": 50
+        },
+        "status": {
+          "type": "string",
+          "description": "대여 상태",
+          "enum": ["대여 중", "반납 완료"]
+        },
+        "createdAt": {
+          "type": "string",
+          "description": "대여 등록 일시 (ISO 형식)"
+        },
+        "returnedAt": {
+          "type": "string",
+          "description": "반납 처리 일시 (ISO 형식)"
+        },
+        "createdByEmail": {
+          "type": "string",
+          "description": "등록자 계정 이메일"
+        },
+        "updatedByEmail": {
+          "type": "string",
+          "description": "최종 수정/반납 처리자 계정 이메일"
+        }
+      },
+      "required": [
+        "id",
+        "period",
+        "gradeClass",
+        "teacherName",
+        "studentRep",
+        "cartUsed",
+        "quantity",
+        "approver",
+        "status",
+        "createdAt"
+      ]
+    },
+    "WhitelistUser": {
+      "title": "WhitelistUser",
+      "description": "관리자 접근 인가 교직원 화이트리스트",
+      "type": "object",
+      "properties": {
+        "email": {
+          "type": "string",
+          "description": "교직원 구글 계정 이메일"
+        },
+        "name": {
+          "type": "string",
+          "description": "교직원 이름",
+          "maxLength": 50
+        },
+        "role": {
+          "type": "string",
+          "description": "권한 구분 (superadmin 또는 admin)",
+          "enum": ["superadmin", "admin"]
+        },
+        "department": {
+          "type": "string",
+          "description": "소속 부서 (예: 교육정보부, 2학년부 등)",
+          "maxLength": 50
+        },
+        "createdAt": {
+          "type": "string",
+          "description": "등록 일시"
+        },
+        "addedBy": {
+          "type": "string",
+          "description": "등록을 승인한 관리자 이메일"
+        }
+      },
+      "required": ["email", "name", "role", "createdAt"]
+    },
+    "Teacher": {
+      "title": "Teacher",
+      "description": "등록된 담당 교사 목록",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "교사 고유 식별자"
+        },
+        "name": {
+          "type": "string",
+          "description": "교사 성명",
+          "maxLength": 50
+        },
+        "subject": {
+          "type": "string",
+          "description": "담당 교과/부서",
+          "maxLength": 50
+        },
+        "createdAt": {
+          "type": "string",
+          "description": "등록 일시"
+        },
+        "addedBy": {
+          "type": "string",
+          "description": "등록자"
+        }
+      },
+      "required": ["id", "name", "createdAt"]
+    },
+    "Approver": {
+      "title": "Approver",
+      "description": "대여 승인 교직원 목록",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "승인자 고유 식별자"
+        },
+        "name": {
+          "type": "string",
+          "description": "승인자 성명 및 직책",
+          "maxLength": 60
+        },
+        "position": {
+          "type": "string",
+          "description": "직책 또는 부서 (예: 교육정보부)",
+          "maxLength": 50
+        },
+        "createdAt": {
+          "type": "string",
+          "description": "등록 일시"
+        },
+        "addedBy": {
+          "type": "string",
+          "description": "등록자"
+        }
+      },
+      "required": ["id", "name", "createdAt"]
+    },
+    "AuditLog": {
+      "title": "AuditLog",
+      "description": "시스템 변경 이력 및 감사 로그",
+      "type": "object",
+      "properties": {
+        "userId": {
+          "type": "string",
+          "description": "작업 수행자 UID"
+        },
+        "userEmail": {
+          "type": "string",
+          "description": "작업 수행자 구글 이메일"
+        },
+        "timestamp": {
+          "type": "string",
+          "description": "로그 기록 일시 (ISO)"
+        },
+        "action": {
+          "type": "string",
+          "description": "수행 작업 유형",
+          "maxLength": 50
+        },
+        "summary": {
+          "type": "string",
+          "description": "작업 요약 설명",
+          "maxLength": 200
+        },
+        "details": {
+          "type": "string",
+          "description": "변경 상세 내역",
+          "maxLength": 1000
+        }
+      },
+      "required": ["userId", "userEmail", "timestamp", "action", "summary"]
+    }
+  },
+  "firestore": {
+    "/rentals/{rentalId}": {
+      "schema": "Rental",
+      "description": "태블릿 대여 및 반납 실시간 기록"
+    },
+    "/whitelist/{whitelistId}": {
+      "schema": "WhitelistUser",
+      "description": "인가된 교직원 계정 화이트리스트"
+    },
+    "/teachers/{teacherId}": {
+      "schema": "Teacher",
+      "description": "등록된 담당 교사 목록"
+    },
+    "/approvers/{approverId}": {
+      "schema": "Approver",
+      "description": "등록된 대여 승인자 목록"
+    },
+    "/audit_logs/{logId}": {
+      "schema": "AuditLog",
+      "description": "감사 로그 및 변경 이력 추적 컬렉션"
+    }
+  }
+}
