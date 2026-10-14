@@ -261,14 +261,14 @@ export const RentalList: React.FC<RentalListProps> = ({
                   {/* Information Row: Fully unified with whitespace-nowrap on all elements */}
                   <div className="flex flex-wrap items-center gap-x-2.5 gap-y-1.5 min-w-0 flex-1 text-xs sm:text-sm">
                     {/* Teacher & Class & Cart info */}
-                    <span className="font-black text-slate-900 text-sm sm:text-base whitespace-nowrap">
+                    <span className="font-bold text-slate-800 text-xs sm:text-sm whitespace-nowrap">
                       {rental.teacherName} 선생님
                     </span>
                     <span className="px-2 py-0.5 rounded-md bg-slate-100 text-slate-800 text-xs font-bold border border-slate-200 whitespace-nowrap">
                       {rental.gradeClass}
                     </span>
                     <span className="px-2 py-0.5 rounded-md bg-blue-50 text-blue-700 text-xs font-bold border border-blue-200 whitespace-nowrap">
-                      {rental.period}
+                      {rental.period ? rental.period.replace(/\s*\(.*\)/, '') : ''}
                     </span>
                     <span
                       className={`px-2.5 py-0.5 rounded-md text-xs font-bold border whitespace-nowrap ${
