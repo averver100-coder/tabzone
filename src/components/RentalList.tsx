@@ -262,7 +262,7 @@ export const RentalList: React.FC<RentalListProps> = ({
                   <div className="flex flex-wrap items-center gap-x-2.5 gap-y-1.5 min-w-0 flex-1 text-xs sm:text-sm">
                     {/* Teacher & Class & Cart info */}
                     <span className="font-bold text-slate-800 text-xs sm:text-sm whitespace-nowrap">
-                      {rental.teacherName} 선생님
+                      {rental.teacherName ? rental.teacherName.replace(/\s*\(.*\)/, '') : ''} 선생님
                     </span>
                     <span className="px-2 py-0.5 rounded-md bg-slate-100 text-slate-800 text-xs font-bold border border-slate-200 whitespace-nowrap">
                       {rental.gradeClass}

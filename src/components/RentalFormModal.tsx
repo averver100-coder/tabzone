@@ -548,8 +548,8 @@ export const RentalFormModal: React.FC<RentalFormModalProps> = ({
                       {teachers.length > 0 ? '교사 선택' : '미등록'}
                     </option>
                     {uniqueTeachers.map((t) => (
-                      <option key={t.id} value={`${t.name} (${t.subject})`} className="text-slate-800">
-                        {t.name} ({t.subject})
+                      <option key={t.id} value={t.name} className="text-slate-800">
+                        {t.name}
                       </option>
                     ))}
                   </select>
