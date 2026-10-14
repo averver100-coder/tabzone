@@ -75,12 +75,12 @@ export const DashboardStatus: React.FC<DashboardStatusProps> = ({
 
           <div className="flex items-center justify-between">
             <div className="flex items-baseline gap-1.5">
-              <span className="text-3xl sm:text-4xl font-black text-blue-600 tracking-tight leading-none select-none">
-                1
-              </span>
               <h3 className="text-sm sm:text-base font-black text-slate-800 whitespace-nowrap">
                 보관함
               </h3>
+              <span className="text-4xl sm:text-5xl font-black text-blue-600 tracking-tight leading-none select-none">
+                1
+              </span>
             </div>
 
             <div className="text-right">
@@ -145,12 +145,12 @@ export const DashboardStatus: React.FC<DashboardStatusProps> = ({
 
           <div className="flex items-center justify-between">
             <div className="flex items-baseline gap-1.5">
-              <span className="text-3xl sm:text-4xl font-black text-emerald-600 tracking-tight leading-none select-none">
-                2
-              </span>
               <h3 className="text-sm sm:text-base font-black text-slate-800 whitespace-nowrap">
                 보관함
               </h3>
+              <span className="text-4xl sm:text-5xl font-black text-emerald-600 tracking-tight leading-none select-none">
+                2
+              </span>
             </div>
 
             <div className="text-right">

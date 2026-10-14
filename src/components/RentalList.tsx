@@ -21,6 +21,7 @@ import {
 import React, { useEffect, useState } from 'react';
 import { Approver, CartType, Rental } from '../types';
 import { ReturnConfirmModal } from './ReturnConfirmModal';
+import { WeeklyRentalChart } from './WeeklyRentalChart';
 
 interface RentalListProps {
   rentals: Rental[];
@@ -213,7 +214,7 @@ export const RentalList: React.FC<RentalListProps> = ({
             </p>
           </div>
         ) : (
-          filteredRentals.map((rental) => {
+          filteredRentals.slice(0, visibleCount).map((rental) => {
             const isOverdue = isPast1630 && rental.status === '대여 중';
             const isCart1 = rental.cartUsed === '보관함 1' || rental.cartUsed === 'A보관함';
             const cartDisplay = isCart1 ? '보관함 1' : '보관함 2';
@@ -376,6 +377,25 @@ export const RentalList: React.FC<RentalListProps> = ({
             );
           })
         )}
+      </div>
+
+      {/* [더보기] Button for 10 more records */}
+      {visibleCount < filteredRentals.length && (
+        <div className="p-3 text-center border-t border-slate-100 bg-slate-50/50">
+          <button
+            type="button"
+            onClick={() => setVisibleCount((prev) => prev + 10)}
+            className="px-5 py-2 rounded-xl bg-white border border-slate-300 text-slate-700 font-bold text-xs hover:bg-slate-100 active:scale-95 transition shadow-2xs flex items-center gap-1.5 mx-auto cursor-pointer"
+          >
+            <span>[더보기] 대여 내역 추가 10건 보기 ({Math.min(visibleCount, filteredRentals.length)} / {filteredRentals.length})</span>
+            <ChevronDown className="w-3.5 h-3.5" />
+          </button>
+        </div>
+      )}
+
+      {/* Weekly Rental Trend Bar Chart */}
+      <div className="p-3.5 sm:p-4 border-t border-slate-200 bg-slate-50/30">
+        <WeeklyRentalChart rentals={rentals} />
       </div>
 
       {/* Return Confirmation Modal */}
