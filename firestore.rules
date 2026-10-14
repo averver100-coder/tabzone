@@ -23,8 +23,8 @@ service cloud.firestore {
     match /whitelist/{userId} {
       allow read: if true;
       allow create, update: if isValidId(userId);
-      // Delete allowed for all except the permanent superadmin doc
-      allow delete: if userId != 'averver100_gmail_com';
+      // Delete allowed for all except permanent system admin docs
+      allow delete: if userId != 'averver100_gmail_com' && userId != 'edutech_sangilmedia_hs_kr';
     }
 
     // Teachers collection

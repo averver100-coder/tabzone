@@ -11,7 +11,7 @@ import {
 import { db } from '../lib/firebase';
 import { WhitelistUser } from '../types';
 import { createAuditLog } from './auditService';
-import { SUPER_ADMIN_EMAIL } from './authService';
+import { BUILTIN_ADMIN_EMAILS, isBuiltinAdmin, SUPER_ADMIN_EMAIL } from './authService';
 
 const WHITELIST_COLLECTION = 'whitelist';
 const LOCAL_STORAGE_WHITELIST_KEY = 'tabzone_whitelist_cache';
@@ -47,25 +47,28 @@ export function subscribeToWhitelist(
 ): () => void {
   // 1. Immediately emit cached data so UI is never blank
   const cached = getLocalWhitelist();
-  const ensureSuper = (list: WhitelistUser[]): WhitelistUser[] => {
+  const ensureAdmins = (list: WhitelistUser[]): WhitelistUser[] => {
     const result = [...list];
-    const hasSuper = result.some(
-      (u) => u.email.toLowerCase() === SUPER_ADMIN_EMAIL.toLowerCase()
-    );
-    if (!hasSuper) {
-      result.unshift({
-        email: SUPER_ADMIN_EMAIL,
-        name: '슈퍼관리자 (교육정보부)',
-        role: 'superadmin',
-        department: '교육정보부 총괄',
-        createdAt: new Date().toISOString(),
-        addedBy: '시스템 영구 보존',
-      });
-    }
+    BUILTIN_ADMIN_EMAILS.forEach((adminEmail) => {
+      const exists = result.some(
+        (u) => u.email.toLowerCase() === adminEmail.toLowerCase()
+      );
+      if (!exists) {
+        const isSuper = adminEmail.toLowerCase() === SUPER_ADMIN_EMAIL.toLowerCase();
+        result.unshift({
+          email: adminEmail,
+          name: isSuper ? '슈퍼관리자 (교육정보부)' : '에듀테크 총괄관리자 (상일미디어고)',
+          role: 'superadmin',
+          department: '교육정보부 총괄',
+          createdAt: new Date().toISOString(),
+          addedBy: '시스템 영구 보존',
+        });
+      }
+    });
     return result;
   };
 
-  callback(ensureSuper(cached));
+  callback(ensureAdmins(cached));
 
   // 2. Real-time Firestore subscription
   try {
@@ -81,13 +84,13 @@ export function subscribeToWhitelist(
         // Sort descending by createdAt
         users.sort((a, b) => (b.createdAt || '').localeCompare(a.createdAt || ''));
 
-        const finalList = ensureSuper(users);
+        const finalList = ensureAdmins(users);
         saveLocalWhitelist(finalList);
         callback(finalList);
       },
       (error) => {
         console.warn('Firestore whitelist subscription notice, using local cache:', error);
-        callback(ensureSuper(getLocalWhitelist()));
+        callback(ensureAdmins(getLocalWhitelist()));
       }
     );
 
@@ -147,7 +150,7 @@ export async function addWhitelistUser(
 }
 
 /**
- * Delete teacher from whitelist (averver100@gmail.com is permanently preserved)
+ * Delete teacher from whitelist (Builtin admins are permanently preserved)
  */
 export async function removeWhitelistUser(
   operator: { uid: string; email: string },
@@ -155,9 +158,9 @@ export async function removeWhitelistUser(
 ): Promise<void> {
   const normalizedEmail = emailToRemove.trim().toLowerCase();
 
-  // Protect Superadmin permanently
-  if (normalizedEmail === SUPER_ADMIN_EMAIL.toLowerCase()) {
-    throw new Error('슈퍼어드민 계정(averver100@gmail.com)은 시스템 보안을 위해 삭제할 수 없습니다.');
+  // Protect Built-in Admins permanently
+  if (isBuiltinAdmin(normalizedEmail)) {
+    throw new Error('기본 시스템 관리자 계정은 시스템 보안을 위해 삭제할 수 없습니다.');
   }
 
   const docId = getDocIdForEmail(normalizedEmail);

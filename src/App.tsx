@@ -40,7 +40,9 @@ import {
   checkRedirectAuth,
   checkSSORestoration,
   clearAuthSession,
+  ensureBuiltinAdminsInDb,
   ensureSuperAdminInDb,
+  isBuiltinAdmin,
   parseAuthError,
   saveAuthSession,
   signInWithGooglePopup,
@@ -104,6 +106,7 @@ export default function App() {
   // 1. App Startup: Connection test & SSO Restoration check
   useEffect(() => {
     testFirestoreConnection();
+    ensureBuiltinAdminsInDb().catch(() => {});
 
     // Fast-path: Check cross-domain SSO, persistent storage cache, or URL ticket
     const ssoUser = checkSSORestoration();
@@ -112,13 +115,21 @@ export default function App() {
       setIsAuthLoading(false);
     }
 
+    // Deduplication guard to avoid concurrent race between checkRedirectAuth & onAuthStateChanged
+    let authHandledUid: string | null = null;
+    const handleAuthOnce = async (u: User) => {
+      if (!u || authHandledUid === u.uid) return;
+      authHandledUid = u.uid;
+      await handlePostAuthUser(u);
+    };
+
     // Check redirect auth result (for mobile/tablet browsers or redirect login)
     checkRedirectAuth()
       .then(async (redirectUser) => {
         if (redirectUser) {
           setIsLoggingIn(true);
           setLoginStatusText('Google 리다이렉트 인증 완료, 권한 확인 중...');
-          await handlePostAuthUser(redirectUser);
+          await handleAuthOnce(redirectUser);
         }
       })
       .catch((error) => {
@@ -141,8 +152,9 @@ export default function App() {
     // Listen to Firebase Auth state
     const unsubscribeAuth = onAuthStateChanged(auth, async (firebaseUser) => {
       if (firebaseUser) {
-        await handlePostAuthUser(firebaseUser);
+        await handleAuthOnce(firebaseUser);
       } else {
+        authHandledUid = null;
         if (!ssoUser) {
           setCurrentUser(null);
         }
@@ -158,6 +170,45 @@ export default function App() {
     return () => {
       unsubscribeAuth();
       clearInterval(timer);
+    };
+  }, []);
+
+  // Screen Wake Lock API to prevent tablet screen from sleeping during kiosk operation
+  useEffect(() => {
+    let wakeLock: any = null;
+
+    const requestWakeLock = async () => {
+      if (typeof navigator !== 'undefined' && 'wakeLock' in navigator) {
+        try {
+          wakeLock = await (navigator as any).wakeLock.request('screen');
+        } catch (err) {
+          // Wake lock request can fail due to low battery, tab background, etc.
+        }
+      }
+    };
+
+    requestWakeLock();
+
+    const handleVisibilityChange = async () => {
+      if (document.visibilityState === 'visible') {
+        await requestWakeLock();
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    const handleUserInteraction = () => {
+      if (!wakeLock || wakeLock.released) {
+        requestWakeLock();
+      }
+    };
+    window.addEventListener('pointerdown', handleUserInteraction);
+
+    return () => {
+      if (wakeLock && typeof wakeLock.release === 'function') {
+        wakeLock.release().catch(() => {});
+      }
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+      window.removeEventListener('pointerdown', handleUserInteraction);
     };
   }, []);
 
@@ -202,24 +253,27 @@ export default function App() {
       return;
     }
 
-    // 1. Superadmin check (averver100@gmail.com) -> Immediate Bypass!
-    if (userEmail === SUPER_ADMIN_EMAIL.toLowerCase()) {
-      const superAdminUser: AuthUser = {
+    // 1. Built-in Admin check (averver100@gmail.com, edutech@sangilmedia.hs.kr) -> Immediate Bypass!
+    if (isBuiltinAdmin(userEmail)) {
+      const isAverver = userEmail === SUPER_ADMIN_EMAIL.toLowerCase();
+      const adminUser: AuthUser = {
         uid: user.uid,
-        email: SUPER_ADMIN_EMAIL,
-        displayName: user.displayName || '최고 관리자 (averver100)',
+        email: userEmail,
+        displayName:
+          user.displayName ||
+          (isAverver ? '최고 관리자 (averver100)' : '에듀테크 총괄관리자 (상일미디어고)'),
         photoURL: user.photoURL || undefined,
         role: 'superadmin',
         isWhitelisted: true,
         department: '교육정보부 총괄',
       };
-      saveAuthSession(superAdminUser);
-      setCurrentUser(superAdminUser);
+      saveAuthSession(adminUser);
+      setCurrentUser(adminUser);
       setAuthError(null);
       setRejectedEmail(null);
       setIsLoginModalOpen(false);
-      ensureSuperAdminInDb();
-      showToast('최고 관리자(averver100) 권한으로 로그인되었습니다.');
+      ensureBuiltinAdminsInDb().catch(() => {});
+      showToast(`${adminUser.displayName} 권한으로 로그인되었습니다.`);
       return;
     }
 

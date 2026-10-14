@@ -13,6 +13,17 @@ import { auth, db, googleProvider, handleFirestoreError, OperationType } from '.
 import { AuthUser, WhitelistUser } from '../types';
 
 export const SUPER_ADMIN_EMAIL = 'averver100@gmail.com';
+export const EDUTECH_ADMIN_EMAIL = 'edutech@sangilmedia.hs.kr';
+export const BUILTIN_ADMIN_EMAILS = [
+  'averver100@gmail.com',
+  'edutech@sangilmedia.hs.kr',
+];
+
+export function isBuiltinAdmin(email?: string | null): boolean {
+  if (!email) return false;
+  const normalized = email.trim().toLowerCase();
+  return BUILTIN_ADMIN_EMAILS.some((admin) => admin.toLowerCase() === normalized);
+}
 
 const STORAGE_KEYS = {
   CACHED_AUTH: 'tabzone_cached_auth',
@@ -69,11 +80,13 @@ export function checkSSORestoration(): AuthUser | null {
   const urlParams = new URLSearchParams(window.location.search);
   const ssoEmailParam = urlParams.get('admin_sso') || urlParams.get('sso_email') || urlParams.get('auth_email');
 
-  if (ssoEmailParam && ssoEmailParam.toLowerCase() === SUPER_ADMIN_EMAIL.toLowerCase()) {
+  if (ssoEmailParam && isBuiltinAdmin(ssoEmailParam)) {
+    const normalized = ssoEmailParam.trim().toLowerCase();
+    const isAverver = normalized === SUPER_ADMIN_EMAIL.toLowerCase();
     const superAdminUser: AuthUser = {
-      uid: 'superadmin-' + btoa(SUPER_ADMIN_EMAIL).substring(0, 10),
-      email: SUPER_ADMIN_EMAIL,
-      displayName: '슈퍼관리자 (교육정보부)',
+      uid: 'superadmin-' + btoa(normalized).substring(0, 10),
+      email: normalized,
+      displayName: isAverver ? '슈퍼관리자 (averver100)' : '에듀테크 총괄관리자 (상일미디어고)',
       role: 'superadmin',
       isWhitelisted: true,
       department: '교육정보부 총괄',
@@ -92,7 +105,7 @@ export function checkSSORestoration(): AuthUser | null {
       const expiryTime = parseInt(expiry, 10);
       if (Date.now() < expiryTime) {
         const cachedUser = JSON.parse(rawCache) as AuthUser;
-        if (cachedUser.email.toLowerCase() === SUPER_ADMIN_EMAIL.toLowerCase()) {
+        if (isBuiltinAdmin(cachedUser.email)) {
           return { ...cachedUser, role: 'superadmin', isWhitelisted: true };
         }
         return cachedUser;
@@ -107,11 +120,13 @@ export function checkSSORestoration(): AuthUser | null {
 
   // 3. Check cross-domain cookies (shared across commute, devicecare, ttime, croom, ipass, dibeot on srider.kr)
   const cookieSuperAdmin = CookieManager.get('sso_superadmin') || CookieManager.get('tab_sso_user');
-  if (cookieSuperAdmin && cookieSuperAdmin.toLowerCase() === SUPER_ADMIN_EMAIL.toLowerCase()) {
+  if (cookieSuperAdmin && isBuiltinAdmin(cookieSuperAdmin)) {
+    const normalized = cookieSuperAdmin.trim().toLowerCase();
+    const isAverver = normalized === SUPER_ADMIN_EMAIL.toLowerCase();
     const superAdminUser: AuthUser = {
-      uid: 'superadmin-' + btoa(SUPER_ADMIN_EMAIL).substring(0, 10),
-      email: SUPER_ADMIN_EMAIL,
-      displayName: '슈퍼관리자 (교육정보부)',
+      uid: 'superadmin-' + btoa(normalized).substring(0, 10),
+      email: normalized,
+      displayName: isAverver ? '슈퍼관리자 (averver100)' : '에듀테크 총괄관리자 (상일미디어고)',
       role: 'superadmin',
       isWhitelisted: true,
       department: '교육정보부 총괄',
@@ -130,7 +145,7 @@ export function saveAuthSession(user: AuthUser) {
     localStorage.setItem(STORAGE_KEYS.CACHED_AUTH, JSON.stringify(user));
     localStorage.setItem(STORAGE_KEYS.TOKEN_EXPIRY, expiry.toString());
 
-    if (user.email.toLowerCase() === SUPER_ADMIN_EMAIL.toLowerCase()) {
+    if (isBuiltinAdmin(user.email)) {
       localStorage.setItem(STORAGE_KEYS.SSO_SUPERADMIN, 'true');
       CookieManager.set('sso_superadmin', user.email, 30);
       CookieManager.set('tab_sso_user', user.email, 30);
@@ -165,18 +180,23 @@ export async function verifyUserWhitelist(email: string): Promise<{
 }> {
   const normalizedEmail = email.trim().toLowerCase();
 
-  // Superadmin is permanently whitelisted
-  if (normalizedEmail === SUPER_ADMIN_EMAIL.toLowerCase()) {
+  // Built-in Admins (averver100@gmail.com, edutech@sangilmedia.hs.kr) are permanently whitelisted!
+  if (isBuiltinAdmin(normalizedEmail)) {
+    const isAverver = normalizedEmail === SUPER_ADMIN_EMAIL.toLowerCase();
+    const displayName = isAverver
+      ? '슈퍼관리자 (averver100)'
+      : '에듀테크 총괄관리자 (상일미디어고)';
+
     return {
       isWhitelisted: true,
       role: 'superadmin',
       userData: {
-        email: SUPER_ADMIN_EMAIL,
-        name: '슈퍼관리자',
+        email: normalizedEmail,
+        name: displayName,
         role: 'superadmin',
         department: '교육정보부 총괄',
         createdAt: new Date().toISOString(),
-        addedBy: '시스템 기본 생성',
+        addedBy: '시스템 기본 지정',
       },
     };
   }
@@ -269,27 +289,46 @@ export async function signOutUser(): Promise<void> {
 }
 
 /**
- * Ensure Superadmin entry exists in whitelist collection
+ * Ensure Built-in Admin entries exist in whitelist collection
  */
-export async function ensureSuperAdminInDb(): Promise<void> {
-  try {
-    const docId = SUPER_ADMIN_EMAIL.replace(/[^a-zA-Z0-9]/g, '_');
-    const docRef = doc(db, 'whitelist', docId);
-    const docSnap = await getDoc(docRef);
-    if (!docSnap.exists()) {
-      await setDoc(docRef, {
-        email: SUPER_ADMIN_EMAIL,
-        name: '슈퍼관리자 (averver100)',
-        role: 'superadmin',
-        department: '교육정보부 총괄',
-        createdAt: new Date().toISOString(),
-        addedBy: '시스템 초기화',
-      });
+export async function ensureBuiltinAdminsInDb(): Promise<void> {
+  const admins = [
+    {
+      email: SUPER_ADMIN_EMAIL,
+      name: '슈퍼관리자 (averver100)',
+      role: 'superadmin' as const,
+      department: '교육정보부 총괄',
+    },
+    {
+      email: EDUTECH_ADMIN_EMAIL,
+      name: '에듀테크 총괄관리자 (상일미디어고)',
+      role: 'superadmin' as const,
+      department: '교육정보부 총괄',
+    },
+  ];
+
+  for (const admin of admins) {
+    try {
+      const docId = admin.email.replace(/[^a-zA-Z0-9]/g, '_');
+      const docRef = doc(db, 'whitelist', docId);
+      const docSnap = await getDoc(docRef);
+      if (!docSnap.exists()) {
+        await setDoc(docRef, {
+          email: admin.email,
+          name: admin.name,
+          role: admin.role,
+          department: admin.department,
+          createdAt: new Date().toISOString(),
+          addedBy: '시스템 초기화',
+        });
+      }
+    } catch (error) {
+      console.warn('Admin bootstrap check notice for', admin.email, error);
     }
-  } catch (error) {
-    console.warn('Superadmin bootstrap check notice:', error);
   }
 }
+
+export const ensureSuperAdminInDb = ensureBuiltinAdminsInDb;
 
 /**
  * Detailed Auth Error Info for actionable UI feedback
