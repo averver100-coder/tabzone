@@ -562,7 +562,7 @@ export const RentalFormModal: React.FC<RentalFormModalProps> = ({
                   </label>
                   <input
                     type="text"
-                    placeholder="예: 실장 김민우"
+                    placeholder="예: 상미고"
                     value={studentRep}
                     onChange={(e) => setStudentRep(e.target.value)}
                     autoComplete="off"
