@@ -6,6 +6,7 @@
 import { onAuthStateChanged, User } from 'firebase/auth';
 import {
   AlertTriangle,
+  BarChart3,
   Building,
   CheckCircle,
   HelpCircle,
@@ -20,6 +21,7 @@ import {
   Users,
 } from 'lucide-react';
 import React, { useEffect, useState } from 'react';
+import { AdminAnalyticsModal } from './components/AdminAnalyticsModal';
 import { AuditLogModal } from './components/AuditLogModal';
 import { DashboardStatus } from './components/DashboardStatus';
 import { Header } from './components/Header';
@@ -98,6 +100,7 @@ export default function App() {
   const [isRentalModalOpen, setIsRentalModalOpen] = useState(false);
   const [isWhitelistModalOpen, setIsWhitelistModalOpen] = useState(false);
   const [isAuditLogsModalOpen, setIsAuditLogsModalOpen] = useState(false);
+  const [isAnalyticsModalOpen, setIsAnalyticsModalOpen] = useState(false);
   const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
   const [isSubmittingRental, setIsSubmittingRental] = useState(false);
   const [returningId, setReturningId] = useState<string | null>(null);
@@ -578,6 +581,7 @@ export default function App() {
         onOpenLogin={() => setIsLoginModalOpen(true)}
         onOpenWhitelist={() => setIsWhitelistModalOpen(true)}
         onOpenAuditLogs={() => setIsAuditLogsModalOpen(true)}
+        onOpenAnalytics={() => setIsAnalyticsModalOpen(true)}
         onLogout={handleLogout}
         isPast1630={isPast1630}
         onOpenRentalModal={() => setIsRentalModalOpen(true)}
@@ -596,6 +600,39 @@ export default function App() {
       {/* Main Content Area */}
       {/* Main Content Area (Galaxy Tab S6 Lite 5:3 Landscape Optimized: max-w-[1440px]) */}
       <main className="flex-1 max-w-[1440px] w-full mx-auto px-4 sm:px-6 lg:px-8 py-3 sm:py-3.5 space-y-3 sm:space-y-3.5">
+
+        {/* Superadmin Analytics Quick Access Banner */}
+        {currentUser?.role === 'superadmin' && (
+          <div className="p-3 sm:p-4 rounded-2xl bg-gradient-to-r from-slate-900 via-indigo-950 to-blue-950 text-white border border-indigo-800/40 shadow-xs flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 animate-in fade-in">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-indigo-500/25 border border-indigo-400/30 flex items-center justify-center shrink-0">
+                <BarChart3 className="w-5 h-5 text-indigo-300" />
+              </div>
+              <div>
+                <div className="flex items-center gap-2">
+                  <h3 className="text-xs sm:text-sm font-black text-white">
+                    슈퍼관리자 대여 통계 분석 대시보드
+                  </h3>
+                  <span className="px-2 py-0.5 rounded-full bg-purple-500/20 text-purple-200 text-[10px] font-bold border border-purple-400/30">
+                    누적 {rentals.length}건 집계
+                  </span>
+                </div>
+                <p className="text-[11px] text-indigo-200 mt-0.5">
+                  요일별·시간대(교시)별 빈도, 누적·주간·월간 추이, 선생님 및 학급별 대여 순위 차트와 기간별 검색 및 엑셀(.xlsx) 추출
+                </p>
+              </div>
+            </div>
+
+            <button
+              type="button"
+              onClick={() => setIsAnalyticsModalOpen(true)}
+              className="flex items-center gap-1.5 h-9 px-3.5 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 active:scale-95 text-white font-bold text-xs shadow-md transition cursor-pointer whitespace-nowrap shrink-0"
+            >
+              <BarChart3 className="w-3.5 h-3.5" />
+              <span>정밀 분석 대시보드 열기</span>
+            </button>
+          </div>
+        )}
 
         {/* Dashboard Status Cards (A/B Storage & Capacity) */}
         <DashboardStatus
@@ -677,6 +714,17 @@ export default function App() {
         onClose={() => setIsAuditLogsModalOpen(false)}
         auditLogs={auditLogs}
       />
+
+      {isAnalyticsModalOpen && (
+        <AdminAnalyticsModal
+          isOpen={isAnalyticsModalOpen}
+          onClose={() => setIsAnalyticsModalOpen(false)}
+          rentals={rentals}
+          teachers={teachers}
+          approvers={approvers}
+          currentUser={currentUser}
+        />
+      )}
     </div>
   );
 }
