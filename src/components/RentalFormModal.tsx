@@ -6,6 +6,7 @@ import {
   CheckCircle2,
   Clock,
   HelpCircle,
+  History,
   Info,
   Loader2,
   Minus,
@@ -17,8 +18,8 @@ import {
   Users,
   X,
 } from 'lucide-react';
-import React, { useEffect, useMemo, useState } from 'react';
-import { Approver, CartCapacity, CartType, Teacher } from '../types';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
+import { Approver, CartCapacity, CartType, Rental, Teacher } from '../types';
 
 interface RentalFormModalProps {
   isOpen: boolean;
@@ -38,6 +39,42 @@ interface RentalFormModalProps {
     approver: string;
   }) => Promise<void>;
   isSubmitting: boolean;
+  rentals?: Rental[];
+}
+
+interface StudentRepRecord {
+  name: string;
+  gradeClass: string;
+  lastUsed: string;
+}
+
+const LOCAL_STORAGE_STUDENT_REPS = 'tabzone_student_reps_history';
+
+function getLocalStudentReps(): StudentRepRecord[] {
+  try {
+    const raw = localStorage.getItem(LOCAL_STORAGE_STUDENT_REPS);
+    if (raw) return JSON.parse(raw);
+  } catch {
+    // Ignore storage errors
+  }
+  return [];
+}
+
+function saveLocalStudentRep(name: string, gradeClass: string) {
+  const cleanName = name.trim();
+  if (!cleanName) return;
+  try {
+    const existing = getLocalStudentReps().filter(
+      (r) => !(r.name.toLowerCase() === cleanName.toLowerCase() && r.gradeClass === gradeClass)
+    );
+    const updated: StudentRepRecord[] = [
+      { name: cleanName, gradeClass, lastUsed: new Date().toISOString() },
+      ...existing,
+    ].slice(0, 50);
+    localStorage.setItem(LOCAL_STORAGE_STUDENT_REPS, JSON.stringify(updated));
+  } catch {
+    // Ignore storage errors
+  }
 }
 
 // School timetable from 2026.03.04 schedule
@@ -73,6 +110,7 @@ export const RentalFormModal: React.FC<RentalFormModalProps> = ({
   approvers,
   onSubmit,
   isSubmitting,
+  rentals = [],
 }) => {
   const [cartUsed, setCartUsed] = useState<CartType>(recommendedCart);
   const [period, setPeriod] = useState<string>('');
@@ -84,6 +122,10 @@ export const RentalFormModal: React.FC<RentalFormModalProps> = ({
   const [approver, setApprover] = useState<string>('');
   const [missingFields, setMissingFields] = useState<string[]>([]);
   const [showTimetableInfo, setShowTimetableInfo] = useState<boolean>(false);
+  const [showSuggestions, setShowSuggestions] = useState<boolean>(false);
+
+  // Track if studentRep was auto-filled so changing class can update it seamlessly
+  const autoFilledRepRef = useRef<string | null>(null);
 
   useEffect(() => {
     if (isOpen) {
@@ -97,6 +139,8 @@ export const RentalFormModal: React.FC<RentalFormModalProps> = ({
       setApprover('');
       setMissingFields([]);
       setShowTimetableInfo(false);
+      setShowSuggestions(false);
+      autoFilledRepRef.current = null;
     }
   }, [isOpen, recommendedCart]);
 
@@ -122,6 +166,111 @@ export const RentalFormModal: React.FC<RentalFormModalProps> = ({
       new Map(approvers.map((a) => [a.name?.trim(), a])).values()
     );
   }, [approvers]);
+
+  // Combined remembered student representatives from real-time Rentals + Local Storage
+  const rememberedStudentReps = useMemo(() => {
+    const list: StudentRepRecord[] = [];
+    const seen = new Set<string>();
+
+    // 1. From real-time rentals history (most recent first)
+    if (rentals && rentals.length > 0) {
+      const sortedRentals = [...rentals].sort(
+        (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+      );
+      for (const r of sortedRentals) {
+        if (r.studentRep && r.studentRep.trim()) {
+          const repName = r.studentRep.trim();
+          const gClass = r.gradeClass ? r.gradeClass.trim() : '';
+          const key = `${repName}__${gClass}`;
+          if (!seen.has(key)) {
+            seen.add(key);
+            list.push({
+              name: repName,
+              gradeClass: gClass,
+              lastUsed: r.createdAt,
+            });
+          }
+        }
+      }
+    }
+
+    // 2. From local persistent cache
+    const local = getLocalStudentReps();
+    for (const r of local) {
+      const key = `${r.name}__${r.gradeClass}`;
+      if (!seen.has(key)) {
+        seen.add(key);
+        list.push(r);
+      }
+    }
+
+    return list;
+  }, [rentals]);
+
+  const selectedGradeClass = grade && classNum ? `${grade} ${classNum}` : '';
+
+  // Class-specific previous student representative
+  const classSpecificRep = useMemo(() => {
+    if (!selectedGradeClass) return null;
+    return (
+      rememberedStudentReps.find(
+        (r) => r.gradeClass.trim() === selectedGradeClass.trim()
+      ) || null
+    );
+  }, [rememberedStudentReps, selectedGradeClass]);
+
+  // Auto-fill student representative when Grade and Class are chosen
+  useEffect(() => {
+    if (selectedGradeClass && classSpecificRep) {
+      // If user hasn't typed a custom name, or the current name was the previous auto-filled name
+      if (!studentRep || studentRep === autoFilledRepRef.current) {
+        setStudentRep(classSpecificRep.name);
+        autoFilledRepRef.current = classSpecificRep.name;
+      }
+    }
+  }, [selectedGradeClass, classSpecificRep]);
+
+  // Quick Chips: unique recent names for 1-tap entry
+  const quickChips = useMemo(() => {
+    const result: StudentRepRecord[] = [];
+    const namesSeen = new Set<string>();
+
+    // If there is a class-specific representative, place it first!
+    if (classSpecificRep) {
+      namesSeen.add(classSpecificRep.name.toLowerCase());
+      result.push(classSpecificRep);
+    }
+
+    // Add recent other unique student names (up to 4 more)
+    for (const item of rememberedStudentReps) {
+      if (!namesSeen.has(item.name.toLowerCase())) {
+        namesSeen.add(item.name.toLowerCase());
+        result.push(item);
+        if (result.length >= 5) break;
+      }
+    }
+
+    return result;
+  }, [rememberedStudentReps, classSpecificRep]);
+
+  // Filtered suggestions for autocomplete dropdown
+  const filteredSuggestions = useMemo(() => {
+    const query = studentRep.trim().toLowerCase();
+    const result: StudentRepRecord[] = [];
+    const namesSeen = new Set<string>();
+
+    for (const item of rememberedStudentReps) {
+      if (!query || item.name.toLowerCase().includes(query) || item.gradeClass.toLowerCase().includes(query)) {
+        const key = `${item.name.toLowerCase()}__${item.gradeClass}`;
+        if (!namesSeen.has(key)) {
+          namesSeen.add(key);
+          result.push(item);
+        }
+      }
+      if (result.length >= 8) break;
+    }
+    return result;
+  }, [rememberedStudentReps, studentRep]);
 
   if (!isOpen) return null;
 
@@ -183,6 +332,9 @@ export const RentalFormModal: React.FC<RentalFormModalProps> = ({
     const combinedGradeClass = `${grade} ${classNum}`;
 
     try {
+      // Save student representative to local memory cache for immediate future reuse
+      saveLocalStudentRep(studentRep.trim(), combinedGradeClass);
+
       await onSubmit({
         period,
         gradeClass: combinedGradeClass,
@@ -556,21 +708,137 @@ export const RentalFormModal: React.FC<RentalFormModalProps> = ({
                   </select>
                 </div>
 
-                <div className="space-y-1">
-                  <label className="text-xs font-bold text-slate-700 flex items-center gap-1.5">
-                    <Users className="w-3.5 h-3.5 text-blue-600" />
-                    <span>학생 대표</span>
-                  </label>
-                  <input
-                    type="text"
-                    placeholder="예: 상미고"
-                    value={studentRep}
-                    onChange={(e) => setStudentRep(e.target.value)}
-                    autoComplete="off"
-                    autoCorrect="off"
-                    spellCheck={false}
-                    className="w-full h-11 px-3.5 rounded-xl border border-slate-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-100 bg-white text-sm text-slate-900 shadow-xs outline-none font-bold"
-                  />
+                <div className="space-y-1 relative">
+                  <div className="flex items-center justify-between">
+                    <label className="text-xs font-bold text-slate-700 flex items-center gap-1.5">
+                      <Users className="w-3.5 h-3.5 text-blue-600" />
+                      <span>학생 대표</span>
+                    </label>
+                    {classSpecificRep && (
+                      <span className="text-[11px] text-blue-600 font-bold flex items-center gap-0.5 truncate max-w-[130px]" title={`${selectedGradeClass} 이전 대표: ${classSpecificRep.name}`}>
+                        <Sparkles className="w-3 h-3 text-amber-500 shrink-0" />
+                        <span className="truncate">{classSpecificRep.name}</span>
+                      </span>
+                    )}
+                  </div>
+                  <div className="relative">
+                    <input
+                      type="text"
+                      list="studentRepSuggestionsList"
+                      placeholder="예: 상미고"
+                      value={studentRep}
+                      onChange={(e) => {
+                        setStudentRep(e.target.value);
+                        setShowSuggestions(true);
+                      }}
+                      onFocus={() => setShowSuggestions(true)}
+                      onBlur={() => setTimeout(() => setShowSuggestions(false), 200)}
+                      autoComplete="off"
+                      autoCorrect="off"
+                      spellCheck={false}
+                      className="w-full h-11 px-3.5 pr-8 rounded-xl border border-slate-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-100 bg-white text-sm text-slate-900 shadow-xs outline-none font-bold"
+                    />
+                    {studentRep && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setStudentRep('');
+                          autoFilledRepRef.current = null;
+                        }}
+                        className="absolute right-2.5 top-1/2 -translate-y-1/2 w-6 h-6 flex items-center justify-center text-slate-400 hover:text-slate-600 rounded-full hover:bg-slate-100 cursor-pointer"
+                        title="이름 지우기"
+                      >
+                        <X className="w-3.5 h-3.5" />
+                      </button>
+                    )}
+                  </div>
+
+                  {/* Native Datalist for Keyboard Autocomplete */}
+                  <datalist id="studentRepSuggestionsList">
+                    {quickChips.map((chip) => (
+                      <option key={chip.name} value={chip.name}>
+                        {chip.gradeClass ? `${chip.gradeClass} 대표` : ''}
+                      </option>
+                    ))}
+                  </datalist>
+
+                  {/* Autocomplete Dropdown Popup */}
+                  {showSuggestions && filteredSuggestions.length > 0 && (
+                    <div className="absolute left-0 right-0 top-[60px] z-30 bg-white rounded-2xl shadow-xl border border-slate-200 py-1.5 max-h-48 overflow-y-auto animate-in fade-in slide-in-from-top-1">
+                      <div className="px-3 py-1 text-[10px] font-bold text-slate-400 uppercase tracking-wider flex items-center justify-between border-b border-slate-100">
+                        <span className="flex items-center gap-1">
+                          <History className="w-3 h-3 text-blue-500" />
+                          <span>이전 대여 학생 대표</span>
+                        </span>
+                        <span className="text-slate-400">터치 시 입력</span>
+                      </div>
+                      {filteredSuggestions.map((item, idx) => {
+                        const isMatchClass = selectedGradeClass && item.gradeClass === selectedGradeClass;
+                        return (
+                          <button
+                            key={`${item.name}-${item.gradeClass}-${idx}`}
+                            type="button"
+                            onMouseDown={() => {
+                              setStudentRep(item.name);
+                              autoFilledRepRef.current = item.name;
+                              setShowSuggestions(false);
+                            }}
+                            className="w-full px-3 py-2 text-left hover:bg-blue-50 flex items-center justify-between text-xs transition cursor-pointer active:bg-blue-100"
+                          >
+                            <div className="flex items-center gap-2">
+                              <span className="font-extrabold text-slate-900">{item.name}</span>
+                              {item.gradeClass && (
+                                <span className="px-1.5 py-0.5 rounded bg-slate-100 text-[10px] text-slate-600 font-semibold">
+                                  {item.gradeClass}
+                                </span>
+                              )}
+                            </div>
+                            {isMatchClass && (
+                              <span className="text-[10px] text-blue-600 font-bold bg-blue-50 px-2 py-0.5 rounded-full border border-blue-200 flex items-center gap-0.5">
+                                <Sparkles className="w-2.5 h-2.5 text-amber-500" />
+                                <span>이 학급 직전 대표</span>
+                              </span>
+                            )}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  )}
+
+                  {/* Quick-tap recommendation chips */}
+                  {quickChips.length > 0 && (
+                    <div className="flex flex-wrap items-center gap-1 pt-1">
+                      <span className="text-[10px] font-bold text-slate-400 flex items-center gap-0.5 shrink-0">
+                        <History className="w-2.5 h-2.5 text-blue-500" />
+                        <span>추천:</span>
+                      </span>
+                      {quickChips.map((chip) => {
+                        const isMatchClass = selectedGradeClass && chip.gradeClass === selectedGradeClass;
+                        const isSelected = studentRep === chip.name;
+                        return (
+                          <button
+                            key={`${chip.name}-${chip.gradeClass}`}
+                            type="button"
+                            onClick={() => {
+                              setStudentRep(chip.name);
+                              autoFilledRepRef.current = chip.name;
+                            }}
+                            className={`px-2 py-0.5 rounded-lg text-[11px] font-bold transition active:scale-95 cursor-pointer flex items-center gap-1 ${
+                              isSelected
+                                ? 'bg-blue-600 text-white shadow-2xs'
+                                : isMatchClass
+                                ? 'bg-blue-50 hover:bg-blue-100 text-blue-700 border border-blue-300 ring-1 ring-blue-200'
+                                : 'bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-200'
+                            }`}
+                            title={`${chip.gradeClass ? `${chip.gradeClass} ` : ''}대표 학생 (${chip.name})`}
+                          >
+                            {isMatchClass && <Sparkles className="w-2.5 h-2.5 text-amber-500 shrink-0" />}
+                            <span>{chip.name}</span>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  )}
                 </div>
               </div>
 

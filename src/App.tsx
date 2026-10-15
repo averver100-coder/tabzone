@@ -638,6 +638,7 @@ export default function App() {
           approvers={approvers}
           onSubmit={handleCreateRental}
           isSubmitting={isSubmittingRental}
+          rentals={rentals}
         />
       )}
 
