@@ -5,7 +5,6 @@ import {
   Hand,
   Plus,
   ShieldCheck,
-  Sparkles,
   Tablet,
 } from 'lucide-react';
 import React, { useEffect, useState } from 'react';
@@ -116,19 +115,9 @@ export const IdleSplashScreen: React.FC<IdleSplashScreenProps> = ({
           </div>
         </div>
 
-        {/* Catchy Hero Text */}
-        <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-white/5 border border-white/10 text-amber-300 text-sm font-semibold mb-3 backdrop-blur-sm shadow-sm">
-          <Sparkles className="w-4 h-4 text-amber-400 animate-spin" style={{ animationDuration: '6s' }} />
-          <span>수업용 스마트 태블릿 대여 및 반납</span>
-        </div>
-
-        <h2 className="text-3xl sm:text-5xl font-extrabold tracking-tight text-white mb-3 leading-tight drop-shadow-md">
+        <h2 className="text-3xl sm:text-5xl font-extrabold tracking-tight text-white mb-8 sm:mb-10 leading-tight drop-shadow-md">
           태블릿이 필요하신가요?
         </h2>
-        <p className="text-base sm:text-xl text-slate-300 mb-8 max-w-xl font-normal leading-relaxed">
-          버튼을 누르시면 터치 한 번으로 간편하게 <br className="hidden sm:inline" />
-          <span className="text-amber-300 font-semibold">충전함 번호</span>와 <span className="text-amber-300 font-semibold">대여 신청</span>을 완료할 수 있습니다.
-        </p>
 
         {/* HIGHLIGHTED '대여하기' BUTTON (PROMINENT KIOSK CTA) */}
         <div className="relative mb-8 group">
