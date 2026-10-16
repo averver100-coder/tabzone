@@ -25,6 +25,7 @@ interface HeaderProps {
   onLogout: () => void;
   isPast1630: boolean;
   onOpenRentalModal?: () => void;
+  onTriggerScreensaver?: () => void;
 }
 
 export const Header: React.FC<HeaderProps> = ({
@@ -36,6 +37,7 @@ export const Header: React.FC<HeaderProps> = ({
   onLogout,
   isPast1630,
   onOpenRentalModal,
+  onTriggerScreensaver,
 }) => {
   const [currentTime, setCurrentTime] = useState<string>('');
   const [isFullscreen, setIsFullscreen] = useState(false);
@@ -92,7 +94,13 @@ export const Header: React.FC<HeaderProps> = ({
       <div className="max-w-[1440px] mx-auto px-4 sm:px-6 lg:px-8 py-3 flex items-center justify-between gap-3 sm:gap-4">
         {/* Brand & School Logo */}
         <div className="flex items-center gap-3 shrink-0">
-          <div className="relative group cursor-pointer">
+          <div
+            onClick={onTriggerScreensaver}
+            className="relative group cursor-pointer"
+            title="대기(Splash) 화면 전환"
+            role="button"
+            tabIndex={0}
+          >
             <TabZoneLogo className="w-11 h-11 sm:w-12 sm:h-12 transition-transform group-hover:scale-105" />
           </div>
 

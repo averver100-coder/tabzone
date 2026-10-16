@@ -25,11 +25,13 @@ import { AdminAnalyticsModal } from './components/AdminAnalyticsModal';
 import { AuditLogModal } from './components/AuditLogModal';
 import { DashboardStatus } from './components/DashboardStatus';
 import { Header } from './components/Header';
+import { IdleSplashScreen } from './components/IdleSplashScreen';
 import { LoginModal } from './components/LoginModal';
 import { PWAUpdatePrompt } from './components/PWAUpdatePrompt';
 import { RentalFormModal } from './components/RentalFormModal';
 import { RentalList } from './components/RentalList';
 import { WhitelistModal } from './components/WhitelistModal';
+import { useIdleTimer } from './hooks/useIdleTimer';
 import { auth, testFirestoreConnection } from './lib/firebase';
 import {
   addApprover,
@@ -105,6 +107,19 @@ export default function App() {
   const [isSubmittingRental, setIsSubmittingRental] = useState(false);
   const [returningId, setReturningId] = useState<string | null>(null);
   const [actionNotice, setActionNotice] = useState<string | null>(null);
+
+  // Inactivity Kiosk ScreenSaver (30s)
+  const isAnyModalOpen =
+    isRentalModalOpen ||
+    isLoginModalOpen ||
+    isWhitelistModalOpen ||
+    isAuditLogsModalOpen ||
+    isAnalyticsModalOpen;
+
+  const { isIdle, setIsIdle, wakeUp } = useIdleTimer({
+    timeoutMs: 30000,
+    disabled: isAnyModalOpen,
+  });
 
   // 1. App Startup: Connection test & SSO Restoration check
   useEffect(() => {
@@ -585,6 +600,7 @@ export default function App() {
         onLogout={handleLogout}
         isPast1630={isPast1630}
         onOpenRentalModal={() => setIsRentalModalOpen(true)}
+        onTriggerScreensaver={() => setIsIdle(true)}
       />
 
       {/* Floating Action Notice Toast */}
@@ -725,6 +741,17 @@ export default function App() {
           currentUser={currentUser}
         />
       )}
+
+      {/* 30-Second Inactivity Kiosk Splash Screen */}
+      <IdleSplashScreen
+        isOpen={isIdle}
+        onWakeUp={wakeUp}
+        onOpenRental={() => {
+          wakeUp();
+          setIsRentalModalOpen(true);
+        }}
+        rentals={rentals}
+      />
     </div>
   );
 }
