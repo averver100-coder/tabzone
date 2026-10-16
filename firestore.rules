@@ -49,9 +49,9 @@ service cloud.firestore {
       allow update, delete: if false; // Audit logs are immutable
     }
 
-    // Test connection doc
-    match /test/connection {
-      allow read: if true;
+    // Settings collection (Operating Hours Schedule, etc.)
+    match /settings/{settingId} {
+      allow read, write: if true;
     }
 
     // Default catch-all

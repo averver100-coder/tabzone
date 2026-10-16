@@ -59,10 +59,17 @@ import {
   calculateCartCapacities,
   createRental,
   getRecommendedCart,
-  isPastClosingTime,
   returnRental,
   subscribeToRentals,
 } from './services/rentalService';
+import {
+  DEFAULT_OPERATING_HOURS,
+  getTodayClosingTime,
+  isPastClosingTime,
+  OperatingHoursSchedule,
+  subscribeToOperatingHours,
+  updateOperatingHours,
+} from './services/settingsService';
 import {
   addTeacher,
   removeTeacher,
@@ -98,7 +105,10 @@ export default function App() {
   const [teachers, setTeachers] = useState<Teacher[]>([]);
   const [approvers, setApprovers] = useState<Approver[]>([]);
   const [auditLogs, setAuditLogs] = useState<AuditLog[]>([]);
-  const [isPast1630, setIsPast1630] = useState<boolean>(isPastClosingTime());
+  // Operating Hours State
+  const [operatingHours, setOperatingHours] = useState<OperatingHoursSchedule>(DEFAULT_OPERATING_HOURS);
+  const [todayClosingTime, setTodayClosingTime] = useState<string>(getTodayClosingTime(DEFAULT_OPERATING_HOURS));
+  const [isPast1630, setIsPast1630] = useState<boolean>(isPastClosingTime(DEFAULT_OPERATING_HOURS));
   const [isRentalModalOpen, setIsRentalModalOpen] = useState(false);
   const [isWhitelistModalOpen, setIsWhitelistModalOpen] = useState(false);
   const [isAuditLogsModalOpen, setIsAuditLogsModalOpen] = useState(false);
@@ -191,21 +201,66 @@ export default function App() {
     };
   }, []);
 
-  // Screen Wake Lock API to prevent tablet screen from sleeping during kiosk operation
+  // Screen Wake Lock API & Smart Charger / Operating Hours Power Detection
+  // When plugged in (charging) and during operating hours: Keep screen awake continuously for kiosk operation.
+  // When past closing time or unplugged (smart plug OFF): Release Wake Lock so Android 30-min screen timeout turns off screen natively!
   useEffect(() => {
     let wakeLock: any = null;
+    let isCharging = true; // Default to true if Battery API unavailable
 
-    const requestWakeLock = async () => {
-      if (typeof navigator !== 'undefined' && 'wakeLock' in navigator) {
+    const releaseWakeLock = async () => {
+      if (wakeLock && typeof wakeLock.release === 'function' && !wakeLock.released) {
         try {
-          wakeLock = await (navigator as any).wakeLock.request('screen');
-        } catch (err) {
-          // Wake lock request can fail due to low battery, tab background, etc.
-        }
+          await wakeLock.release();
+        } catch (_) {}
       }
     };
 
-    requestWakeLock();
+    const requestWakeLock = async () => {
+      const pastClosing = isPastClosingTime(operatingHours);
+      if ((operatingHours.autoReleaseWakeLockOnClosing && pastClosing) || !isCharging) {
+        await releaseWakeLock();
+        return;
+      }
+
+      if (typeof navigator !== 'undefined' && 'wakeLock' in navigator) {
+        try {
+          if (!wakeLock || wakeLock.released) {
+            wakeLock = await (navigator as any).wakeLock.request('screen');
+          }
+        } catch (_) {}
+      }
+    };
+
+    // Monitor Battery Charging Status
+    if (typeof navigator !== 'undefined' && 'getBattery' in (navigator as any)) {
+      (navigator as any)
+        .getBattery()
+        .then((battery: any) => {
+          isCharging = battery.charging;
+          if (isCharging) {
+            requestWakeLock();
+          } else {
+            releaseWakeLock();
+          }
+
+          const onChargingChange = () => {
+            isCharging = battery.charging;
+            if (isCharging) {
+              requestWakeLock();
+            } else {
+              releaseWakeLock();
+            }
+          };
+
+          battery.addEventListener('chargingchange', onChargingChange);
+        })
+        .catch(() => {
+          requestWakeLock();
+        });
+    } else {
+      requestWakeLock();
+    }
 
     const handleVisibilityChange = async () => {
       if (document.visibilityState === 'visible') {
@@ -213,27 +268,35 @@ export default function App() {
       }
     };
 
-    document.addEventListener('visibilitychange', handleVisibilityChange);
     const handleUserInteraction = () => {
-      if (!wakeLock || wakeLock.released) {
-        requestWakeLock();
+      const pastClosing = isPastClosingTime(operatingHours);
+      if (isCharging && (!operatingHours.autoReleaseWakeLockOnClosing || !pastClosing)) {
+        if (!wakeLock || wakeLock.released) {
+          requestWakeLock();
+        }
       }
     };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
     window.addEventListener('pointerdown', handleUserInteraction);
 
     return () => {
-      if (wakeLock && typeof wakeLock.release === 'function') {
-        wakeLock.release().catch(() => {});
-      }
+      releaseWakeLock();
       document.removeEventListener('visibilitychange', handleVisibilityChange);
       window.removeEventListener('pointerdown', handleUserInteraction);
     };
-  }, []);
+  }, [operatingHours]);
 
-  // 2. Real-time Subscriptions (Rentals, Whitelist, Teachers, Approvers, Audit Logs)
+  // 2. Real-time Subscriptions (Rentals, Whitelist, Teachers, Approvers, Audit Logs, Operating Hours)
   useEffect(() => {
     const unsubRentals = subscribeToRentals((data) => {
       setRentals(data);
+    });
+
+    const unsubHours = subscribeToOperatingHours((schedule) => {
+      setOperatingHours(schedule);
+      setTodayClosingTime(getTodayClosingTime(schedule));
+      setIsPast1630(isPastClosingTime(schedule));
     });
 
     const unsubWhitelist = subscribeToWhitelist((users) => {
@@ -254,6 +317,7 @@ export default function App() {
 
     return () => {
       unsubRentals();
+      unsubHours();
       unsubWhitelist();
       unsubTeachers();
       unsubApprovers();
@@ -599,6 +663,7 @@ export default function App() {
         onOpenAnalytics={() => setIsAnalyticsModalOpen(true)}
         onLogout={handleLogout}
         isPast1630={isPast1630}
+        closingTimeStr={todayClosingTime}
         onOpenRentalModal={() => setIsRentalModalOpen(true)}
         onTriggerScreensaver={() => setIsIdle(true)}
       />
@@ -723,6 +788,12 @@ export default function App() {
         approvers={approvers}
         onAddApprover={handleAddApprover}
         onRemoveApprover={handleRemoveApprover}
+        operatingHours={operatingHours}
+        onUpdateOperatingHours={async (schedule) => {
+          const operatorEmail = currentUser?.email || SUPER_ADMIN_EMAIL;
+          await updateOperatingHours(schedule, operatorEmail);
+          showToast('요일별 마감 시간 설정이 성공적으로 저장되었습니다.');
+        }}
       />
 
       <AuditLogModal

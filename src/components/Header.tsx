@@ -24,6 +24,7 @@ interface HeaderProps {
   onOpenAnalytics?: () => void;
   onLogout: () => void;
   isPast1630: boolean;
+  closingTimeStr?: string;
   onOpenRentalModal?: () => void;
   onTriggerScreensaver?: () => void;
 }
@@ -36,6 +37,7 @@ export const Header: React.FC<HeaderProps> = ({
   onOpenAnalytics,
   onLogout,
   isPast1630,
+  closingTimeStr = '16:30',
   onOpenRentalModal,
   onTriggerScreensaver,
 }) => {
@@ -133,7 +135,7 @@ export const Header: React.FC<HeaderProps> = ({
           </span>
           {isPast1630 ? (
             <span className="px-2 py-0.5 rounded-full bg-white/25 text-white text-[10px] sm:text-[11px] font-black border border-white/30 animate-pulse whitespace-nowrap">
-              16:30 마감 경과
+              {closingTimeStr} 마감 경과
             </span>
           ) : (
             <span className="px-2 py-0.5 rounded-full bg-white/20 text-white text-[10px] sm:text-[11px] font-bold whitespace-nowrap">

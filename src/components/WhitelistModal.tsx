@@ -2,6 +2,7 @@ import {
   AlertCircle,
   Building,
   CheckCircle,
+  Clock,
   FolderLock,
   GraduationCap,
   KeyRound,
@@ -9,6 +10,8 @@ import {
   Lock,
   Mail,
   Plus,
+  RotateCcw,
+  Save,
   Shield,
   ShieldAlert,
   ShieldCheck,
@@ -17,8 +20,9 @@ import {
   Users,
   X,
 } from 'lucide-react';
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { SUPER_ADMIN_EMAIL } from '../services/authService';
+import { DEFAULT_OPERATING_HOURS, OperatingHoursSchedule } from '../services/settingsService';
 import { Approver, Teacher, WhitelistUser } from '../types';
 
 interface WhitelistModalProps {
@@ -33,7 +37,9 @@ interface WhitelistModalProps {
   approvers: Approver[];
   onAddApprover: (approver: { name: string; position: string }) => Promise<void>;
   onRemoveApprover: (approverId: string, name: string) => Promise<void>;
-  initialTab?: 'whitelist' | 'teachers' | 'approvers';
+  operatingHours?: OperatingHoursSchedule;
+  onUpdateOperatingHours?: (hours: OperatingHoursSchedule) => Promise<void>;
+  initialTab?: 'whitelist' | 'teachers' | 'approvers' | 'hours';
 }
 
 export const WhitelistModal: React.FC<WhitelistModalProps> = ({
@@ -48,9 +54,11 @@ export const WhitelistModal: React.FC<WhitelistModalProps> = ({
   approvers,
   onAddApprover,
   onRemoveApprover,
+  operatingHours = DEFAULT_OPERATING_HOURS,
+  onUpdateOperatingHours,
   initialTab = 'whitelist',
 }) => {
-  const [activeTab, setActiveTab] = useState<'whitelist' | 'teachers' | 'approvers'>(initialTab);
+  const [activeTab, setActiveTab] = useState<'whitelist' | 'teachers' | 'approvers' | 'hours'>(initialTab);
 
   // Whitelist Form State
   const [newEmail, setNewEmail] = useState('');
@@ -64,6 +72,15 @@ export const WhitelistModal: React.FC<WhitelistModalProps> = ({
   // Approver Form State
   const [approverName, setApproverName] = useState('');
   const [approverPosition, setApproverPosition] = useState('교육정보부');
+
+  // Operating Hours State
+  const [hoursForm, setHoursForm] = useState<OperatingHoursSchedule>(operatingHours);
+
+  useEffect(() => {
+    if (operatingHours) {
+      setHoursForm(operatingHours);
+    }
+  }, [operatingHours]);
 
   // Action status
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -104,20 +121,17 @@ export const WhitelistModal: React.FC<WhitelistModalProps> = ({
   };
 
   // 2. Remove Whitelist User
-  const handleRemoveWhitelist = async (email: string) => {
-    if (email.toLowerCase() === SUPER_ADMIN_EMAIL.toLowerCase()) {
-      setMsg({
-        type: 'error',
-        text: '슈퍼어드민 계정(averver100@gmail.com)은 시스템 보안을 위해 영구 보존되며 삭제할 수 없습니다.',
-      });
+  const handleRemoveWhitelist = async (user: WhitelistUser) => {
+    if (user.email.toLowerCase() === SUPER_ADMIN_EMAIL.toLowerCase() || user.email.toLowerCase() === 'edutech@sangilmedia.hs.kr') {
+      setMsg({ type: 'error', text: '기본 내장 시스템 최고관리자는 영구 보호 계정이므로 삭제할 수 없습니다.' });
       return;
     }
 
     try {
-      setDeletingId(email);
+      setDeletingId(user.email);
       setMsg(null);
-      await onRemoveUser(email);
-      setMsg({ type: 'success', text: `${email} 계정이 화이트리스트에서 정상 삭제되었습니다.` });
+      await onRemoveUser(user.email);
+      setMsg({ type: 'success', text: `화이트리스트 계정 [${user.name} / ${user.email}]이(가) 즉시 삭제되었습니다.` });
     } catch (err: any) {
       setMsg({ type: 'error', text: err.message || '삭제 중 오류가 발생했습니다.' });
     } finally {
@@ -130,7 +144,7 @@ export const WhitelistModal: React.FC<WhitelistModalProps> = ({
     e.preventDefault();
     setMsg(null);
     if (!teacherName.trim()) {
-      setMsg({ type: 'error', text: '담당 교사 이름을 입력해 주세요.' });
+      setMsg({ type: 'error', text: '선생님 성함을 입력해 주세요.' });
       return;
     }
 
@@ -138,11 +152,11 @@ export const WhitelistModal: React.FC<WhitelistModalProps> = ({
       setIsSubmitting(true);
       await onAddTeacher({
         name: teacherName.trim(),
-        subject: teacherSubject.trim() || '교과',
+        subject: teacherSubject.trim() || '일반',
       });
       const addedName = teacherName.trim();
       setTeacherName('');
-      setMsg({ type: 'success', text: `담당 교사 [${addedName}] 선생님이 등록되었습니다. 프론트 화면 드롭다운에 즉시 반영됩니다.` });
+      setMsg({ type: 'success', text: `담당 교사 [${addedName}] 선생님이 등록되었습니다. 대여 폼에서 선택 가능합니다.` });
     } catch (err: any) {
       setMsg({ type: 'error', text: err.message || '교사 등록 중 오류가 발생했습니다.' });
     } finally {
@@ -203,6 +217,30 @@ export const WhitelistModal: React.FC<WhitelistModalProps> = ({
     }
   };
 
+  // 7. Save Operating Hours Schedule
+  const handleSaveOperatingHours = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!onUpdateOperatingHours) return;
+
+    try {
+      setIsSubmitting(true);
+      setMsg(null);
+      await onUpdateOperatingHours(hoursForm);
+      setMsg({
+        type: 'success',
+        text: '요일별 마감 시간 및 스마트 플러그 전원 연동 설정이 저장되었습니다.',
+      });
+    } catch (err: any) {
+      setMsg({ type: 'error', text: err.message || '운영 시간 저장 중 오류가 발생했습니다.' });
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleResetDefaultHours = () => {
+    setHoursForm(DEFAULT_OPERATING_HOURS);
+  };
+
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-5 bg-black/50 overflow-hidden">
       <div className="w-full max-w-4xl bg-white rounded-3xl shadow-2xl border border-slate-200 overflow-hidden my-auto max-h-[92vh] flex flex-col">
@@ -215,7 +253,7 @@ export const WhitelistModal: React.FC<WhitelistModalProps> = ({
             <div>
               <h3 className="text-xl sm:text-2xl font-black tracking-tight">교직원 & 관리자 통합 설정</h3>
               <p className="text-xs sm:text-sm text-purple-200">
-                슈퍼어드민 전용 · 화이트리스트 계정 · 대여 승인자 · 담당 교사 마스터 관리
+                슈퍼어드민 전용 · 화이트리스트 계정 · 대여 승인자 · 담당 교사 · 운영 시간 관리
               </p>
             </div>
           </div>
@@ -229,12 +267,12 @@ export const WhitelistModal: React.FC<WhitelistModalProps> = ({
           </button>
         </div>
 
-        {/* Tab Selection (Large Touch Tabs: Height 52px) */}
+        {/* Tab Selection */}
         <div className="px-6 pt-3 bg-slate-50 border-b border-slate-200 flex items-center gap-2.5 shrink-0 overflow-x-auto select-none">
           <button
             type="button"
             onClick={() => { setActiveTab('whitelist'); setMsg(null); }}
-            className={`h-12 px-5 rounded-t-2xl text-xs sm:text-sm font-black transition cursor-pointer flex items-center gap-2 border-b-2 ${
+            className={`h-12 px-5 rounded-t-2xl text-xs sm:text-sm font-black transition cursor-pointer flex items-center gap-2 border-b-2 whitespace-nowrap ${
               activeTab === 'whitelist'
                 ? 'border-purple-600 bg-white text-purple-900 shadow-xs'
                 : 'border-transparent text-slate-500 hover:text-slate-800'
@@ -247,7 +285,7 @@ export const WhitelistModal: React.FC<WhitelistModalProps> = ({
           <button
             type="button"
             onClick={() => { setActiveTab('approvers'); setMsg(null); }}
-            className={`h-12 px-5 rounded-t-2xl text-xs sm:text-sm font-black transition cursor-pointer flex items-center gap-2 border-b-2 ${
+            className={`h-12 px-5 rounded-t-2xl text-xs sm:text-sm font-black transition cursor-pointer flex items-center gap-2 border-b-2 whitespace-nowrap ${
               activeTab === 'approvers'
                 ? 'border-blue-600 bg-white text-blue-900 shadow-xs'
                 : 'border-transparent text-slate-500 hover:text-slate-800'
@@ -260,7 +298,7 @@ export const WhitelistModal: React.FC<WhitelistModalProps> = ({
           <button
             type="button"
             onClick={() => { setActiveTab('teachers'); setMsg(null); }}
-            className={`h-12 px-5 rounded-t-2xl text-xs sm:text-sm font-black transition cursor-pointer flex items-center gap-2 border-b-2 ${
+            className={`h-12 px-5 rounded-t-2xl text-xs sm:text-sm font-black transition cursor-pointer flex items-center gap-2 border-b-2 whitespace-nowrap ${
               activeTab === 'teachers'
                 ? 'border-emerald-600 bg-white text-emerald-900 shadow-xs'
                 : 'border-transparent text-slate-500 hover:text-slate-800'
@@ -269,6 +307,19 @@ export const WhitelistModal: React.FC<WhitelistModalProps> = ({
             <GraduationCap className="w-4 h-4 text-emerald-600" />
             <span>담당 교사 관리 ({teachers.length})</span>
           </button>
+
+          <button
+            type="button"
+            onClick={() => { setActiveTab('hours'); setMsg(null); }}
+            className={`h-12 px-5 rounded-t-2xl text-xs sm:text-sm font-black transition cursor-pointer flex items-center gap-2 border-b-2 whitespace-nowrap ${
+              activeTab === 'hours'
+                ? 'border-amber-600 bg-white text-amber-900 shadow-xs'
+                : 'border-transparent text-slate-500 hover:text-slate-800'
+            }`}
+          >
+            <Clock className="w-4 h-4 text-amber-600" />
+            <span>운영시간 & 마감 설정</span>
+          </button>
         </div>
 
         {/* Modal Scrollable Body */}
@@ -276,158 +327,120 @@ export const WhitelistModal: React.FC<WhitelistModalProps> = ({
           {/* Status Message */}
           {msg && (
             <div
-              className={`p-3.5 rounded-2xl text-xs font-semibold flex items-center gap-2 ${
+              className={`p-3.5 rounded-2xl text-xs sm:text-sm font-semibold flex items-center gap-2 ${
                 msg.type === 'error'
-                  ? 'bg-rose-50 border border-rose-200 text-rose-700'
+                  ? 'bg-rose-50 border border-rose-200 text-rose-800'
                   : 'bg-emerald-50 border border-emerald-200 text-emerald-800'
               }`}
             >
               {msg.type === 'error' ? (
-                <AlertCircle className="w-4 h-4 shrink-0" />
+                <AlertCircle className="w-4 h-4 shrink-0 text-rose-600" />
               ) : (
-                <CheckCircle className="w-4 h-4 shrink-0" />
+                <CheckCircle className="w-4 h-4 shrink-0 text-emerald-600" />
               )}
               <span>{msg.text}</span>
             </div>
           )}
 
-          {/* TAB 1: WHITELIST */}
+          {/* TAB 1: WHITELIST MANAGEMENT */}
           {activeTab === 'whitelist' && (
-            <div className="space-y-4">
-              {/* Whitelist Add Form */}
-              <form
-                onSubmit={handleAddWhitelist}
-                className="p-4 rounded-2xl bg-purple-50/60 border border-purple-200 space-y-3"
-              >
-                <div className="flex items-center justify-between">
-                  <span className="text-xs font-black text-purple-900 flex items-center gap-1.5">
-                    <Plus className="w-3.5 h-3.5" />
-                    화이트리스트 교직원 계정 등록
-                  </span>
-                  <span className="text-[11px] text-purple-600 font-semibold">
-                    등록 즉시 Google 로그인 허용
-                  </span>
+            <div className="space-y-6">
+              <form onSubmit={handleAddWhitelist} className="p-4 sm:p-5 rounded-2xl bg-purple-50/60 border border-purple-200 space-y-4">
+                <div className="flex items-center gap-2 text-sm font-black text-purple-900">
+                  <Plus className="w-4 h-4" />
+                  <span>새 교직원 화이트리스트 등록</span>
                 </div>
 
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                   <div>
-                    <label className="text-xs font-bold text-slate-600">구글 이메일</label>
+                    <label className="block text-xs font-bold text-slate-600 mb-1">구글 이메일 주소 *</label>
                     <input
                       type="email"
-                      placeholder="teacher@school.kr"
+                      required
+                      placeholder="example@sangilmedia.hs.kr"
                       value={newEmail}
                       onChange={(e) => setNewEmail(e.target.value)}
-                      className="w-full mt-1 h-12 px-4 rounded-2xl bg-white border border-slate-300 text-sm text-slate-900 focus:outline-none focus:border-purple-500 shadow-xs"
+                      className="w-full h-11 px-3.5 rounded-xl border border-slate-300 bg-white text-xs sm:text-sm font-medium focus:ring-2 focus:ring-purple-500 focus:outline-none"
                     />
                   </div>
+
                   <div>
-                    <label className="text-xs font-bold text-slate-600">성명</label>
+                    <label className="block text-xs font-bold text-slate-600 mb-1">성명 (이름) *</label>
                     <input
                       type="text"
-                      placeholder="이교사"
+                      required
+                      placeholder="예: 홍길동"
                       value={newName}
                       onChange={(e) => setNewName(e.target.value)}
-                      className="w-full mt-1 h-12 px-4 rounded-2xl bg-white border border-slate-300 text-sm text-slate-900 focus:outline-none focus:border-purple-500 shadow-xs"
+                      className="w-full h-11 px-3.5 rounded-xl border border-slate-300 bg-white text-xs sm:text-sm font-medium focus:ring-2 focus:ring-purple-500 focus:outline-none"
                     />
                   </div>
+
                   <div>
-                    <label className="text-xs font-bold text-slate-600">소속 부서</label>
+                    <label className="block text-xs font-bold text-slate-600 mb-1">소속 부서 / 교무실</label>
                     <input
                       type="text"
-                      placeholder="교육정보부 / 2학년부"
+                      placeholder="예: 교육정보부"
                       value={newDept}
                       onChange={(e) => setNewDept(e.target.value)}
-                      className="w-full mt-1 h-12 px-4 rounded-2xl bg-white border border-slate-300 text-sm text-slate-900 focus:outline-none focus:border-purple-500 shadow-xs"
+                      className="w-full h-11 px-3.5 rounded-xl border border-slate-300 bg-white text-xs sm:text-sm font-medium focus:ring-2 focus:ring-purple-500 focus:outline-none"
                     />
                   </div>
                 </div>
 
-                <button
-                  type="submit"
-                  disabled={isSubmitting}
-                  className="w-full h-13 rounded-2xl bg-purple-700 hover:bg-purple-800 active:scale-95 text-white font-black text-sm sm:text-base shadow-md transition flex items-center justify-center gap-2.5 cursor-pointer disabled:opacity-50"
-                >
-                  {isSubmitting ? (
-                    <>
-                      <Loader2 className="w-4 h-4 animate-spin" />
-                      <span>등록 처리 중...</span>
-                    </>
-                  ) : (
-                    <>
-                      <CheckCircle className="w-4 h-4" />
-                      <span>화이트리스트 계정 추가하기</span>
-                    </>
-                  )}
-                </button>
+                <div className="flex justify-end pt-1">
+                  <button
+                    type="submit"
+                    disabled={isSubmitting}
+                    className="h-11 px-6 rounded-xl bg-purple-700 hover:bg-purple-800 text-white text-xs sm:text-sm font-bold flex items-center gap-2 shadow-md transition cursor-pointer disabled:opacity-50"
+                  >
+                    {isSubmitting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Plus className="w-4 h-4" />}
+                    <span>화이트리스트 등록하기</span>
+                  </button>
+                </div>
               </form>
 
-              {/* Whitelist Users List */}
+              {/* Whitelist Table */}
               <div className="space-y-2">
-                <div className="flex items-center justify-between text-xs sm:text-sm font-bold text-slate-700">
-                  <span>등록된 교직원 계정 ({whitelistUsers.length}명)</span>
-                  <span className="text-xs text-slate-400">averver100@gmail.com 영구 보존</span>
+                <div className="text-xs sm:text-sm font-bold text-slate-700">
+                  승인된 화이트리스트 목록 ({whitelistUsers.length}명)
                 </div>
-
                 <div className="divide-y divide-slate-100 max-h-72 overflow-y-auto border border-slate-200 rounded-2xl bg-white">
-                  {whitelistUsers.map((user) => {
-                    const isSuper = user.email.toLowerCase() === SUPER_ADMIN_EMAIL.toLowerCase();
+                  {whitelistUsers.map((u) => {
+                    const isProtected =
+                      u.email.toLowerCase() === SUPER_ADMIN_EMAIL.toLowerCase() ||
+                      u.email.toLowerCase() === 'edutech@sangilmedia.hs.kr';
 
                     return (
-                      <div
-                        key={user.email}
-                        className="p-3.5 sm:p-4 flex items-center justify-between gap-3 hover:bg-slate-50 transition-colors"
-                      >
+                      <div key={u.email} className="p-3.5 sm:p-4 flex items-center justify-between gap-3 hover:bg-slate-50">
                         <div className="flex items-center gap-3">
-                          <div
-                            className={`w-11 h-11 rounded-2xl flex items-center justify-center text-sm font-bold shrink-0 ${
-                              isSuper
-                                ? 'bg-purple-100 text-purple-700 border border-purple-200'
-                                : 'bg-blue-100 text-blue-700 border border-blue-200'
-                            }`}
-                          >
-                            {isSuper ? <ShieldCheck className="w-6 h-6" /> : <User className="w-6 h-6" />}
+                          <div className={`w-10 h-10 rounded-xl flex items-center justify-center font-bold text-sm ${isProtected ? 'bg-amber-100 text-amber-800' : 'bg-purple-100 text-purple-800'}`}>
+                            {isProtected ? <ShieldCheck className="w-5 h-5 text-amber-600" /> : <User className="w-5 h-5" />}
                           </div>
                           <div>
-                            <div className="flex items-center gap-2">
-                              <span className="text-sm font-black text-slate-900">{user.name}</span>
-                              <span
-                                className={`px-2 py-0.5 rounded-md text-[11px] font-black ${
-                                  isSuper
-                                    ? 'bg-purple-100 text-purple-700 border border-purple-200'
-                                    : 'bg-slate-100 text-slate-700'
-                                }`}
-                              >
-                                {isSuper ? '슈퍼어드민' : '일반관리자'}
-                              </span>
-                              <span className="text-xs text-slate-500">{user.department}</span>
+                            <div className="text-sm font-black text-slate-900 flex items-center gap-2">
+                              <span>{u.name}</span>
+                              {isProtected && (
+                                <span className="text-[10px] px-2 py-0.5 rounded-full bg-amber-100 text-amber-800 border border-amber-300 font-bold">
+                                  시스템 영구 관리자
+                                </span>
+                              )}
                             </div>
-                            <div className="text-xs font-mono text-slate-500 mt-0.5">{user.email}</div>
+                            <div className="text-xs text-slate-500">{u.email} • {u.department || '교무실'}</div>
                           </div>
                         </div>
 
-                        <div>
-                          {isSuper ? (
-                            <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-amber-50 text-amber-800 text-xs font-bold border border-amber-200">
-                              <Lock className="w-3.5 h-3.5 text-amber-600" />
-                              영구 보존
-                            </span>
-                          ) : (
-                            <button
-                              type="button"
-                              disabled={deletingId === user.email}
-                              onClick={() => handleRemoveWhitelist(user.email)}
-                              className="w-11 h-11 text-slate-400 hover:text-rose-600 bg-slate-100 hover:bg-rose-50 rounded-xl transition active:scale-95 flex items-center justify-center cursor-pointer disabled:opacity-50"
-                              title="화이트리스트 권한 해제"
-                              aria-label="삭제"
-                            >
-                              {deletingId === user.email ? (
-                                <Loader2 className="w-5 h-5 animate-spin text-rose-600" />
-                              ) : (
-                                <Trash2 className="w-5 h-5" />
-                              )}
-                            </button>
-                          )}
-                        </div>
+                        {!isProtected && (
+                          <button
+                            type="button"
+                            disabled={deletingId === u.email}
+                            onClick={() => handleRemoveWhitelist(u)}
+                            className="w-10 h-10 text-slate-400 hover:text-rose-600 bg-slate-100 hover:bg-rose-50 rounded-xl transition flex items-center justify-center cursor-pointer"
+                            title="삭제"
+                          >
+                            {deletingId === u.email ? <Loader2 className="w-4 h-4 animate-spin text-rose-600" /> : <Trash2 className="w-4 h-4" />}
+                          </button>
+                        )}
                       </div>
                     );
                   })}
@@ -438,111 +451,76 @@ export const WhitelistModal: React.FC<WhitelistModalProps> = ({
 
           {/* TAB 2: APPROVERS MANAGEMENT */}
           {activeTab === 'approvers' && (
-            <div className="space-y-4">
-              <div className="p-3.5 bg-blue-50 border border-blue-200 rounded-2xl text-xs sm:text-sm text-blue-900 font-medium">
-                승인자는 교육정보부 등 태블릿 관리를 책임지는 담당자입니다.
-                대여 승인뿐만 아니라 <strong>반납 승인 시에도 동일한 승인자 목록</strong>에서 선택하거나 확인할 수 있습니다. (대여승인자와 반납승인자는 서로 다를 수 있습니다)
-              </div>
-
-              {/* Approver Add Form */}
-              <form
-                onSubmit={handleAddApprover}
-                className="p-4 sm:p-5 rounded-2xl bg-blue-50/60 border border-blue-200 space-y-3.5"
-              >
-                <div className="flex items-center justify-between">
-                  <span className="text-sm font-black text-blue-900 flex items-center gap-1.5">
-                    <Plus className="w-4 h-4" />
-                    신규 대여/반납 승인자 추가
-                  </span>
-                  <span className="text-xs text-blue-600 font-semibold">
-                    대여 및 반납 승인자 목록에 즉시 연동
-                  </span>
+            <div className="space-y-6">
+              <form onSubmit={handleAddApprover} className="p-4 sm:p-5 rounded-2xl bg-blue-50/60 border border-blue-200 space-y-4">
+                <div className="flex items-center gap-2 text-sm font-black text-blue-900">
+                  <Plus className="w-4 h-4" />
+                  <span>새 대여 승인자 등록</span>
                 </div>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div>
-                    <label className="text-xs font-bold text-slate-600">성명 및 직책</label>
+                    <label className="block text-xs font-bold text-slate-600 mb-1">성명 (이름) *</label>
                     <input
                       type="text"
-                      placeholder="예: 정스마트 부장교사"
+                      required
+                      placeholder="예: 김민수"
                       value={approverName}
                       onChange={(e) => setApproverName(e.target.value)}
-                      className="w-full mt-1 h-12 px-4 rounded-2xl bg-white border border-slate-300 text-sm text-slate-900 focus:outline-none focus:border-blue-500 shadow-xs"
+                      className="w-full h-11 px-3.5 rounded-xl border border-slate-300 bg-white text-xs sm:text-sm font-medium focus:ring-2 focus:ring-blue-500 focus:outline-none"
                     />
                   </div>
+
                   <div>
-                    <label className="text-xs font-bold text-slate-600">부서 / 역할</label>
+                    <label className="block text-xs font-bold text-slate-600 mb-1">직책 / 부서 *</label>
                     <input
                       type="text"
-                      placeholder="예: 교육정보부 스마트기기 담당"
+                      placeholder="예: 교육정보부 부장교사"
                       value={approverPosition}
                       onChange={(e) => setApproverPosition(e.target.value)}
-                      className="w-full mt-1 h-12 px-4 rounded-2xl bg-white border border-slate-300 text-sm text-slate-900 focus:outline-none focus:border-blue-500 shadow-xs"
+                      className="w-full h-11 px-3.5 rounded-xl border border-slate-300 bg-white text-xs sm:text-sm font-medium focus:ring-2 focus:ring-blue-500 focus:outline-none"
                     />
                   </div>
                 </div>
 
-                <button
-                  type="submit"
-                  disabled={isSubmitting}
-                  className="w-full h-13 rounded-2xl bg-blue-700 hover:bg-blue-800 active:scale-95 text-white font-black text-sm sm:text-base shadow-md transition flex items-center justify-center gap-2.5 cursor-pointer disabled:opacity-50"
-                >
-                  {isSubmitting ? (
-                    <>
-                      <Loader2 className="w-4 h-4 animate-spin" />
-                      <span>등록 중...</span>
-                    </>
-                  ) : (
-                    <>
-                      <CheckCircle className="w-4 h-4" />
-                      <span>대여 승인자 등록하기</span>
-                    </>
-                  )}
-                </button>
+                <div className="flex justify-end pt-1">
+                  <button
+                    type="submit"
+                    disabled={isSubmitting}
+                    className="h-11 px-6 rounded-xl bg-blue-700 hover:bg-blue-800 text-white text-xs sm:text-sm font-bold flex items-center gap-2 shadow-md transition cursor-pointer disabled:opacity-50"
+                  >
+                    {isSubmitting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Plus className="w-4 h-4" />}
+                    <span>대여 승인자 등록하기</span>
+                  </button>
+                </div>
               </form>
 
-              {/* Approvers List */}
+              {/* Approvers Table */}
               <div className="space-y-2">
-                <div className="flex items-center justify-between text-xs sm:text-sm font-bold text-slate-700">
-                  <span>
-                    등록된 대여 승인자 목록 (
-                    {Array.from(new Map(approvers.map((a) => [`${a.name?.trim()}__${a.position?.trim()}`, a])).values()).length}
-                    명)
-                  </span>
-                  <span className="text-xs text-slate-400">대여 폼에서 필수로 선택됩니다</span>
+                <div className="text-xs sm:text-sm font-bold text-slate-700">
+                  등록된 대여 승인자 목록 ({approvers.length}명)
                 </div>
-
                 <div className="divide-y divide-slate-100 max-h-72 overflow-y-auto border border-slate-200 rounded-2xl bg-white">
-                  {Array.from(
-                    new Map(approvers.map((a) => [`${a.name?.trim()}__${a.position?.trim()}`, a])).values()
-                  ).map((appr) => (
-                    <div
-                      key={appr.id}
-                      className="p-3.5 sm:p-4 flex items-center justify-between gap-3 hover:bg-slate-50 transition-colors"
-                    >
+                  {approvers.map((a) => (
+                    <div key={a.id} className="p-3.5 sm:p-4 flex items-center justify-between gap-3 hover:bg-slate-50">
                       <div className="flex items-center gap-3">
-                        <div className="w-11 h-11 rounded-2xl bg-blue-100 text-blue-700 border border-blue-200 flex items-center justify-center shrink-0">
-                          <FolderLock className="w-6 h-6" />
+                        <div className="w-10 h-10 rounded-xl bg-blue-100 text-blue-800 flex items-center justify-center font-bold text-sm">
+                          <FolderLock className="w-5 h-5 text-blue-600" />
                         </div>
                         <div>
-                          <div className="text-sm font-black text-slate-900">{appr.name}</div>
-                          <div className="text-xs text-slate-500 mt-0.5">{appr.position}</div>
+                          <div className="text-sm font-black text-slate-900">{a.name}</div>
+                          <div className="text-xs text-slate-500">{a.position}</div>
                         </div>
                       </div>
 
                       <button
                         type="button"
-                        disabled={deletingId === appr.id}
-                        onClick={() => handleRemoveApprover(appr)}
-                        className="w-11 h-11 text-slate-400 hover:text-rose-600 bg-slate-100 hover:bg-rose-50 rounded-xl transition active:scale-95 flex items-center justify-center cursor-pointer disabled:opacity-50"
-                        title="승인자 삭제"
-                        aria-label="삭제"
+                        disabled={deletingId === a.id}
+                        onClick={() => handleRemoveApprover(a)}
+                        className="w-10 h-10 text-slate-400 hover:text-rose-600 bg-slate-100 hover:bg-rose-50 rounded-xl transition flex items-center justify-center cursor-pointer"
+                        title="삭제"
                       >
-                        {deletingId === appr.id ? (
-                          <Loader2 className="w-5 h-5 animate-spin text-rose-600" />
-                        ) : (
-                          <Trash2 className="w-5 h-5" />
-                        )}
+                        {deletingId === a.id ? <Loader2 className="w-4 h-4 animate-spin text-rose-600" /> : <Trash2 className="w-4 h-4" />}
                       </button>
                     </div>
                   ))}
@@ -553,95 +531,65 @@ export const WhitelistModal: React.FC<WhitelistModalProps> = ({
 
           {/* TAB 3: TEACHERS MANAGEMENT */}
           {activeTab === 'teachers' && (
-            <div className="space-y-4">
-              <div className="p-3.5 bg-emerald-50 border border-emerald-200 rounded-2xl text-xs sm:text-sm text-emerald-900 font-medium">
-                여기서 등록된 교사만 대여 폼의 <strong>[담당 교사 드롭다운]</strong>에 노출됩니다.
-                수업 책임자가 명확해지도록 신임 교사나 시간강사도 필요한 경우 등록해 주세요.
-              </div>
-
-              {/* Teacher Add Form */}
-              <form
-                onSubmit={handleAddTeacher}
-                className="p-4 sm:p-5 rounded-2xl bg-emerald-50/60 border border-emerald-200 space-y-3.5"
-              >
-                <div className="flex items-center justify-between">
-                  <span className="text-sm font-black text-emerald-900 flex items-center gap-1.5">
-                    <Plus className="w-4 h-4" />
-                    신규 담당 교사 등록
-                  </span>
-                  <span className="text-xs text-emerald-600 font-semibold">
-                    프론트 드롭다운 목록 즉시 추가
-                  </span>
+            <div className="space-y-6">
+              <form onSubmit={handleAddTeacher} className="p-4 sm:p-5 rounded-2xl bg-emerald-50/60 border border-emerald-200 space-y-4">
+                <div className="flex items-center gap-2 text-sm font-black text-emerald-900">
+                  <Plus className="w-4 h-4" />
+                  <span>새 담당 교사 등록</span>
                 </div>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div>
-                    <label className="text-xs font-bold text-slate-600">교사 성명</label>
+                    <label className="block text-xs font-bold text-slate-600 mb-1">선생님 성함 *</label>
                     <input
                       type="text"
-                      placeholder="예: 홍길동"
+                      required
+                      placeholder="예: 이영희"
                       value={teacherName}
                       onChange={(e) => setTeacherName(e.target.value)}
-                      className="w-full mt-1 h-12 px-4 rounded-2xl bg-white border border-slate-300 text-sm text-slate-900 focus:outline-none focus:border-emerald-500 shadow-xs"
+                      className="w-full h-11 px-3.5 rounded-xl border border-slate-300 bg-white text-xs sm:text-sm font-medium focus:ring-2 focus:ring-emerald-500 focus:outline-none"
                     />
                   </div>
+
                   <div>
-                    <label className="text-xs font-bold text-slate-600">담당 교과</label>
+                    <label className="block text-xs font-bold text-slate-600 mb-1">담당 교과 / 과목 *</label>
                     <input
                       type="text"
-                      placeholder="예: 정보 / 수학 / 과학"
+                      placeholder="예: 컴퓨터 / 정보"
                       value={teacherSubject}
                       onChange={(e) => setTeacherSubject(e.target.value)}
-                      className="w-full mt-1 h-12 px-4 rounded-2xl bg-white border border-slate-300 text-sm text-slate-900 focus:outline-none focus:border-emerald-500 shadow-xs"
+                      className="w-full h-11 px-3.5 rounded-xl border border-slate-300 bg-white text-xs sm:text-sm font-medium focus:ring-2 focus:ring-emerald-500 focus:outline-none"
                     />
                   </div>
                 </div>
 
-                <button
-                  type="submit"
-                  disabled={isSubmitting}
-                  className="w-full h-13 rounded-2xl bg-emerald-700 hover:bg-emerald-800 active:scale-95 text-white font-black text-sm sm:text-base shadow-md transition flex items-center justify-center gap-2.5 cursor-pointer disabled:opacity-50"
-                >
-                  {isSubmitting ? (
-                    <>
-                      <Loader2 className="w-4 h-4 animate-spin" />
-                      <span>교사 등록 중...</span>
-                    </>
-                  ) : (
-                    <>
-                      <CheckCircle className="w-4 h-4" />
-                      <span>담당 교사 등록하기</span>
-                    </>
-                  )}
-                </button>
+                <div className="flex justify-end pt-1">
+                  <button
+                    type="submit"
+                    disabled={isSubmitting}
+                    className="h-11 px-6 rounded-xl bg-emerald-700 hover:bg-emerald-800 text-white text-xs sm:text-sm font-bold flex items-center gap-2 shadow-md transition cursor-pointer disabled:opacity-50"
+                  >
+                    {isSubmitting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Plus className="w-4 h-4" />}
+                    <span>담당 교사 등록하기</span>
+                  </button>
+                </div>
               </form>
 
-              {/* Teachers List */}
+              {/* Teachers Table */}
               <div className="space-y-2">
-                <div className="flex items-center justify-between text-xs sm:text-sm font-bold text-slate-700">
-                  <span>
-                    등록된 담당 교사 목록 (
-                    {Array.from(new Map(teachers.map((t) => [`${t.name?.trim()}__${t.subject?.trim()}`, t])).values()).length}
-                    명)
-                  </span>
-                  <span className="text-xs text-slate-400">대여 폼 드롭다운 연동</span>
+                <div className="text-xs sm:text-sm font-bold text-slate-700">
+                  등록된 담당 교사 목록 ({teachers.length}명)
                 </div>
-
                 <div className="divide-y divide-slate-100 max-h-72 overflow-y-auto border border-slate-200 rounded-2xl bg-white">
-                  {Array.from(
-                    new Map(teachers.map((t) => [`${t.name?.trim()}__${t.subject?.trim()}`, t])).values()
-                  ).map((t) => (
-                    <div
-                      key={t.id}
-                      className="p-3.5 sm:p-4 flex items-center justify-between gap-3 hover:bg-slate-50 transition-colors"
-                    >
+                  {teachers.map((t) => (
+                    <div key={t.id} className="p-3.5 sm:p-4 flex items-center justify-between gap-3 hover:bg-slate-50">
                       <div className="flex items-center gap-3">
-                        <div className="w-11 h-11 rounded-2xl bg-emerald-100 text-emerald-700 border border-emerald-200 flex items-center justify-center shrink-0">
-                          <GraduationCap className="w-6 h-6" />
+                        <div className="w-10 h-10 rounded-xl bg-emerald-100 text-emerald-800 flex items-center justify-center font-bold text-sm">
+                          <GraduationCap className="w-5 h-5 text-emerald-600" />
                         </div>
                         <div>
                           <div className="text-sm font-black text-slate-900">{t.name} 선생님</div>
-                          <div className="text-xs text-slate-500 mt-0.5">담당 교과: {t.subject}</div>
+                          <div className="text-xs text-slate-500">담당 교과: {t.subject}</div>
                         </div>
                       </div>
 
@@ -649,21 +597,252 @@ export const WhitelistModal: React.FC<WhitelistModalProps> = ({
                         type="button"
                         disabled={deletingId === t.id}
                         onClick={() => handleRemoveTeacher(t)}
-                        className="w-11 h-11 text-slate-400 hover:text-rose-600 bg-slate-100 hover:bg-rose-50 rounded-xl transition active:scale-95 flex items-center justify-center cursor-pointer disabled:opacity-50"
-                        title="교사 삭제"
-                        aria-label="삭제"
+                        className="w-10 h-10 text-slate-400 hover:text-rose-600 bg-slate-100 hover:bg-rose-50 rounded-xl transition flex items-center justify-center cursor-pointer"
+                        title="삭제"
                       >
-                        {deletingId === t.id ? (
-                          <Loader2 className="w-5 h-5 animate-spin text-rose-600" />
-                        ) : (
-                          <Trash2 className="w-5 h-5" />
-                        )}
+                        {deletingId === t.id ? <Loader2 className="w-4 h-4 animate-spin text-rose-600" /> : <Trash2 className="w-4 h-4" />}
                       </button>
                     </div>
                   ))}
                 </div>
               </div>
             </div>
+          )}
+
+          {/* TAB 4: OPERATING HOURS & CLOSING TIME SETTINGS */}
+          {activeTab === 'hours' && (
+            <form onSubmit={handleSaveOperatingHours} className="space-y-6">
+              <div className="p-4 sm:p-5 rounded-2xl bg-amber-50/70 border border-amber-200/80 space-y-3">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2 text-sm font-black text-amber-900">
+                    <Clock className="w-5 h-5 text-amber-600" />
+                    <span>요일별 마감 시간 및 스마트 플러그 전원 연동</span>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={handleResetDefaultHours}
+                    className="text-xs text-amber-700 hover:text-amber-900 font-bold flex items-center gap-1 hover:underline cursor-pointer"
+                  >
+                    <RotateCcw className="w-3.5 h-3.5" />
+                    <span>기본값(월화 16:30 / 수목금 16:00) 복원</span>
+                  </button>
+                </div>
+                <p className="text-xs text-amber-800 leading-relaxed font-medium">
+                  스마트 플러그 및 교내 일과 시간에 맞추어 요일별 마감 시간을 지정할 수 있습니다. <br />
+                  마감 시간이 경과하거나 스마트 플러그 전원이 꺼지면 **Screen Wake Lock이 자동으로 해제되어 안드로이드 설정(30분)에 따라 태블릿 화면이 자동으로 꺼집니다.**
+                </p>
+              </div>
+
+              {/* Day-of-week Closing Time Grid */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3.5">
+                {/* Mon */}
+                <div className="p-3.5 rounded-2xl border border-slate-200 bg-white space-y-2">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-black text-slate-800 flex items-center gap-1.5">
+                      <span className="w-2 h-2 rounded-full bg-blue-500" />
+                      월요일 마감 시간
+                    </span>
+                    <span className="text-[11px] font-bold text-blue-600 bg-blue-50 px-2 py-0.5 rounded-full">
+                      스마트플러그 16:30
+                    </span>
+                  </div>
+                  <input
+                    type="time"
+                    value={hoursForm.mon}
+                    onChange={(e) => setHoursForm({ ...hoursForm, mon: e.target.value })}
+                    className="w-full h-11 px-3 rounded-xl border border-slate-300 font-mono text-sm font-bold text-slate-900 focus:ring-2 focus:ring-amber-500 focus:outline-none"
+                  />
+                  <div className="flex gap-1">
+                    {['16:00', '16:30', '17:00'].map((preset) => (
+                      <button
+                        key={preset}
+                        type="button"
+                        onClick={() => setHoursForm({ ...hoursForm, mon: preset })}
+                        className={`text-[11px] font-bold px-2 py-1 rounded-lg border transition cursor-pointer ${hoursForm.mon === preset ? 'bg-amber-500 text-white border-amber-600' : 'bg-slate-100 text-slate-600 border-slate-200'}`}
+                      >
+                        {preset}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Tue */}
+                <div className="p-3.5 rounded-2xl border border-slate-200 bg-white space-y-2">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-black text-slate-800 flex items-center gap-1.5">
+                      <span className="w-2 h-2 rounded-full bg-blue-500" />
+                      화요일 마감 시간
+                    </span>
+                    <span className="text-[11px] font-bold text-blue-600 bg-blue-50 px-2 py-0.5 rounded-full">
+                      스마트플러그 16:30
+                    </span>
+                  </div>
+                  <input
+                    type="time"
+                    value={hoursForm.tue}
+                    onChange={(e) => setHoursForm({ ...hoursForm, tue: e.target.value })}
+                    className="w-full h-11 px-3 rounded-xl border border-slate-300 font-mono text-sm font-bold text-slate-900 focus:ring-2 focus:ring-amber-500 focus:outline-none"
+                  />
+                  <div className="flex gap-1">
+                    {['16:00', '16:30', '17:00'].map((preset) => (
+                      <button
+                        key={preset}
+                        type="button"
+                        onClick={() => setHoursForm({ ...hoursForm, tue: preset })}
+                        className={`text-[11px] font-bold px-2 py-1 rounded-lg border transition cursor-pointer ${hoursForm.tue === preset ? 'bg-amber-500 text-white border-amber-600' : 'bg-slate-100 text-slate-600 border-slate-200'}`}
+                      >
+                        {preset}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Wed */}
+                <div className="p-3.5 rounded-2xl border border-slate-200 bg-white space-y-2">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-black text-slate-800 flex items-center gap-1.5">
+                      <span className="w-2 h-2 rounded-full bg-indigo-500" />
+                      수요일 마감 시간
+                    </span>
+                    <span className="text-[11px] font-bold text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded-full">
+                      스마트플러그 16:00
+                    </span>
+                  </div>
+                  <input
+                    type="time"
+                    value={hoursForm.wed}
+                    onChange={(e) => setHoursForm({ ...hoursForm, wed: e.target.value })}
+                    className="w-full h-11 px-3 rounded-xl border border-slate-300 font-mono text-sm font-bold text-slate-900 focus:ring-2 focus:ring-amber-500 focus:outline-none"
+                  />
+                  <div className="flex gap-1">
+                    {['16:00', '16:30', '17:00'].map((preset) => (
+                      <button
+                        key={preset}
+                        type="button"
+                        onClick={() => setHoursForm({ ...hoursForm, wed: preset })}
+                        className={`text-[11px] font-bold px-2 py-1 rounded-lg border transition cursor-pointer ${hoursForm.wed === preset ? 'bg-amber-500 text-white border-amber-600' : 'bg-slate-100 text-slate-600 border-slate-200'}`}
+                      >
+                        {preset}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Thu */}
+                <div className="p-3.5 rounded-2xl border border-slate-200 bg-white space-y-2">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-black text-slate-800 flex items-center gap-1.5">
+                      <span className="w-2 h-2 rounded-full bg-indigo-500" />
+                      목요일 마감 시간
+                    </span>
+                    <span className="text-[11px] font-bold text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded-full">
+                      스마트플러그 16:00
+                    </span>
+                  </div>
+                  <input
+                    type="time"
+                    value={hoursForm.thu}
+                    onChange={(e) => setHoursForm({ ...hoursForm, thu: e.target.value })}
+                    className="w-full h-11 px-3 rounded-xl border border-slate-300 font-mono text-sm font-bold text-slate-900 focus:ring-2 focus:ring-amber-500 focus:outline-none"
+                  />
+                  <div className="flex gap-1">
+                    {['16:00', '16:30', '17:00'].map((preset) => (
+                      <button
+                        key={preset}
+                        type="button"
+                        onClick={() => setHoursForm({ ...hoursForm, thu: preset })}
+                        className={`text-[11px] font-bold px-2 py-1 rounded-lg border transition cursor-pointer ${hoursForm.thu === preset ? 'bg-amber-500 text-white border-amber-600' : 'bg-slate-100 text-slate-600 border-slate-200'}`}
+                      >
+                        {preset}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Fri */}
+                <div className="p-3.5 rounded-2xl border border-slate-200 bg-white space-y-2">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-black text-slate-800 flex items-center gap-1.5">
+                      <span className="w-2 h-2 rounded-full bg-indigo-500" />
+                      금요일 마감 시간
+                    </span>
+                    <span className="text-[11px] font-bold text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded-full">
+                      스마트플러그 16:00
+                    </span>
+                  </div>
+                  <input
+                    type="time"
+                    value={hoursForm.fri}
+                    onChange={(e) => setHoursForm({ ...hoursForm, fri: e.target.value })}
+                    className="w-full h-11 px-3 rounded-xl border border-slate-300 font-mono text-sm font-bold text-slate-900 focus:ring-2 focus:ring-amber-500 focus:outline-none"
+                  />
+                  <div className="flex gap-1">
+                    {['16:00', '16:30', '17:00'].map((preset) => (
+                      <button
+                        key={preset}
+                        type="button"
+                        onClick={() => setHoursForm({ ...hoursForm, fri: preset })}
+                        className={`text-[11px] font-bold px-2 py-1 rounded-lg border transition cursor-pointer ${hoursForm.fri === preset ? 'bg-amber-500 text-white border-amber-600' : 'bg-slate-100 text-slate-600 border-slate-200'}`}
+                      >
+                        {preset}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Sat / Sun */}
+                <div className="p-3.5 rounded-2xl border border-slate-200 bg-slate-50/80 space-y-2">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-black text-slate-700">주말 (토/일) 마감 시간</span>
+                  </div>
+                  <input
+                    type="time"
+                    value={hoursForm.sat}
+                    onChange={(e) => setHoursForm({ ...hoursForm, sat: e.target.value, sun: e.target.value })}
+                    className="w-full h-11 px-3 rounded-xl border border-slate-300 font-mono text-sm font-bold text-slate-900 focus:ring-2 focus:ring-amber-500 focus:outline-none bg-white"
+                  />
+                  <div className="text-[11px] text-slate-500">주말 기본 마감시간 (동일 적용)</div>
+                </div>
+              </div>
+
+              {/* Auto Release WakeLock Toggle Option */}
+              <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200 flex items-center justify-between gap-4">
+                <div>
+                  <div className="text-sm font-black text-slate-900 flex items-center gap-2">
+                    <span>마감 시간 경과 및 전원 차단 시 화면 자동 꺼짐 수용</span>
+                    <span className="px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 text-[10px] font-bold">
+                      권장 (스마트 플러그 연동)
+                    </span>
+                  </div>
+                  <p className="text-xs text-slate-500 mt-1">
+                    마감 시간이 지나거나 충전기 전원이 꺼지면 Screen Wake Lock을 해제하여 안드로이드 설정(30분)에 따라 태블릿 화면이 자동으로 꺼지도록 합니다.
+                  </p>
+                </div>
+
+                <label className="relative inline-flex items-center cursor-pointer shrink-0">
+                  <input
+                    type="checkbox"
+                    checked={hoursForm.autoReleaseWakeLockOnClosing}
+                    onChange={(e) =>
+                      setHoursForm({ ...hoursForm, autoReleaseWakeLockOnClosing: e.target.checked })
+                    }
+                    className="sr-only peer"
+                  />
+                  <div className="w-11 h-6 bg-slate-300 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-amber-600" />
+                </label>
+              </div>
+
+              <div className="flex items-center justify-end gap-3 pt-2 border-t border-slate-100">
+                <button
+                  type="submit"
+                  disabled={isSubmitting}
+                  className="h-12 px-7 rounded-2xl bg-gradient-to-r from-amber-600 to-amber-700 hover:from-amber-700 hover:to-amber-800 active:scale-95 text-white font-black text-sm flex items-center gap-2 shadow-lg shadow-amber-600/25 transition cursor-pointer disabled:opacity-50"
+                >
+                  {isSubmitting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
+                  <span>요일별 마감 시간 저장하기</span>
+                </button>
+              </div>
+            </form>
           )}
         </div>
       </div>
