@@ -19,174 +19,212 @@ export const TabZoneLogo: React.FC<TabZoneLogoProps> = ({
       aria-label="탭존 패밀리 로고"
     >
       <defs>
+        {/* Soft Outer Drop Shadow for Shield */}
+        <filter id="tzShieldShadow" x="-20%" y="-20%" width="140%" height="140%">
+          <feDropShadow dx="0" dy="12" stdDeviation="15" floodColor="#000000" floodOpacity="0.38" />
+        </filter>
+
+        {/* 3D Bevel Emboss Shadow for Gold Icons */}
+        <filter id="tz3dEmboss" x="-20%" y="-20%" width="140%" height="140%">
+          <feDropShadow dx="0" dy="3.5" stdDeviation="3" floodColor="#05101e" floodOpacity="0.7" />
+        </filter>
+
         {/* Metallic Gold Outer Bevel Gradient */}
-        <linearGradient id="tzGoldOuterRim" x1="0%" y1="0%" x2="100%" y2="100%">
-          <stop offset="0%" stopColor="#fde6a4" />
-          <stop offset="25%" stopColor="#dfb86e" />
-          <stop offset="50%" stopColor="#be8c3b" />
-          <stop offset="75%" stopColor="#e5c07b" />
+        <linearGradient id="tzGoldRim" x1="0%" y1="0%" x2="100%" y2="100%">
+          <stop offset="0%" stopColor="#fae4a0" />
+          <stop offset="25%" stopColor="#dfb96f" />
+          <stop offset="50%" stopColor="#ba8a38" />
+          <stop offset="78%" stopColor="#e8c37a" />
           <stop offset="100%" stopColor="#8a5c18" />
         </linearGradient>
 
         {/* Inner Gold Lip Gradient */}
         <linearGradient id="tzGoldInnerRim" x1="0%" y1="0%" x2="0%" y2="100%">
-          <stop offset="0%" stopColor="#ffe299" />
-          <stop offset="40%" stopColor="#d4a34f" />
+          <stop offset="0%" stopColor="#ffe6a2" />
+          <stop offset="35%" stopColor="#d6a551" />
           <stop offset="100%" stopColor="#7a4b12" />
         </linearGradient>
 
-        {/* Navy Shield Face Gradient (Left Facet: Lit) */}
+        {/* Shield Interior: Left Facet (Illuminated Navy) */}
         <linearGradient id="tzNavyLeft" x1="0%" y1="0%" x2="100%" y2="100%">
-          <stop offset="0%" stopColor="#254a7c" />
-          <stop offset="50%" stopColor="#1a375e" />
-          <stop offset="100%" stopColor="#122744" />
+          <stop offset="0%" stopColor="#213a5f" />
+          <stop offset="50%" stopColor="#192e4e" />
+          <stop offset="100%" stopColor="#122137" />
         </linearGradient>
 
-        {/* Navy Shield Face Gradient (Right Facet: Deeper) */}
+        {/* Shield Interior: Right Facet (Deep Navy) */}
         <linearGradient id="tzNavyRight" x1="0%" y1="0%" x2="100%" y2="100%">
-          <stop offset="0%" stopColor="#1c375b" />
-          <stop offset="50%" stopColor="#122744" />
-          <stop offset="100%" stopColor="#0a1728" />
+          <stop offset="0%" stopColor="#1a2f4e" />
+          <stop offset="50%" stopColor="#13233b" />
+          <stop offset="100%" stopColor="#0b1626" />
         </linearGradient>
 
-        {/* Gold Emblem Metal Fill */}
-        <linearGradient id="tzGoldEmblem" x1="0%" y1="0%" x2="0%" y2="100%">
-          <stop offset="0%" stopColor="#fae097" />
-          <stop offset="30%" stopColor="#dfb76c" />
-          <stop offset="70%" stopColor="#be8a35" />
-          <stop offset="100%" stopColor="#875815" />
+        {/* Gold Graphic Elements Gradient */}
+        <linearGradient id="tzGoldElement" x1="0%" y1="0%" x2="0%" y2="100%">
+          <stop offset="0%" stopColor="#fae39d" />
+          <stop offset="30%" stopColor="#dfb86e" />
+          <stop offset="70%" stopColor="#bf8c39" />
+          <stop offset="100%" stopColor="#875816" />
         </linearGradient>
 
-        {/* Cursor Gradient */}
-        <linearGradient id="tzGoldCursor" x1="0%" y1="0%" x2="100%" y2="100%">
-          <stop offset="0%" stopColor="#fff2be" />
-          <stop offset="40%" stopColor="#e8c27a" />
-          <stop offset="80%" stopColor="#b8832c" />
-          <stop offset="100%" stopColor="#6e420b" />
+        {/* Screen Dark Navy */}
+        <linearGradient id="tzScreenDark" x1="0%" y1="0%" x2="100%" y2="100%">
+          <stop offset="0%" stopColor="#14243b" />
+          <stop offset="100%" stopColor="#0c1727" />
         </linearGradient>
       </defs>
 
-      {/* Soft Outer Shadow Silhouette */}
-      <path
-        d="M 256,48 L 404,82 L 404,280 C 404,372 340,432 256,474 C 172,432 108,372 108,280 L 108,82 Z"
-        fill="#000000"
-        fillOpacity="0.28"
-      />
-
-      {/* Outer Shield Beveled Gold Rim */}
-      <path
-        d="M 256,44 L 400,78 L 400,276 C 400,366 338,426 256,468 C 174,426 112,366 112,276 L 112,78 Z"
-        fill="url(#tzGoldOuterRim)"
-      />
-
-      {/* Inner Gold Bevel Contour Line */}
-      <path
-        d="M 256,58 L 388,89 L 388,272 C 388,354 330,412 256,450 C 182,412 124,354 124,272 L 124,89 Z"
-        fill="#7a4c14"
-      />
-      <path
-        d="M 256,62 L 384,92 L 384,270 C 384,350 328,408 256,444 C 184,408 128,350 128,270 L 128,92 Z"
-        fill="url(#tzGoldInnerRim)"
-      />
-
-      {/* Shield Navy Interior */}
-      <path
-        d="M 256,72 L 138,100 L 138,266 C 138,342 190,396 256,432 Z"
-        fill="url(#tzNavyLeft)"
-      />
-      <path
-        d="M 256,72 L 374,100 L 374,266 C 374,342 322,396 256,432 Z"
-        fill="url(#tzNavyRight)"
-      />
-
-      {/* Center Spine Highlight */}
-      <line
-        x1="256"
-        y1="72"
-        x2="256"
-        y2="432"
-        stroke="#ffffff"
-        strokeWidth="1.5"
-        strokeOpacity="0.15"
-      />
-
-      {/* UPPER GRAPHIC: GOLD TABLET & CURSOR ARROW */}
-      <g>
-        {/* Tablet Outer Shell (Landscape) */}
-        <rect
-          x="176"
-          y="128"
-          width="160"
-          height="108"
-          rx="16"
-          ry="16"
-          fill="none"
-          stroke="url(#tzGoldEmblem)"
-          strokeWidth="14"
-          strokeLinejoin="round"
-        />
-
-        {/* Left Camera Dot & Right Sensor Dot */}
-        <circle cx="187" cy="182" r="3.5" fill="url(#tzGoldEmblem)" />
-        <circle cx="325" cy="182" r="2.5" fill="url(#tzGoldEmblem)" />
-
-        {/* Tablet Screen Cutout (Dark Navy) */}
-        <rect
-          x="194"
-          y="142"
-          width="124"
-          height="80"
-          rx="6"
-          ry="6"
-          fill="#0a1626"
-        />
-
-        {/* Pointer Cursor Arrow */}
+      <g transform="translate(15.36, 15.36) scale(0.94)">
+        {/* ================= SHIELD ================= */}
+        {/* Outer Shield Beveled Gold Rim & Soft Shadow */}
         <path
-          d="M 270,175 L 316,247 L 300,250 L 320,287 L 300,297 L 280,260 L 262,273 Z"
-          fill="#040c17"
-          fillOpacity="0.5"
+          d="M 256,48 Q 345,68 428,88 L 428,266 C 428,362 348,428 256,470 C 164,428 84,362 84,266 L 84,88 Q 167,68 256,48 Z"
+          fill="url(#tzGoldRim)"
+          filter="url(#tzShieldShadow)"
         />
+
+        {/* Inner Dark Groove */}
         <path
-          d="M 268,172 L 314,244 L 298,247 L 318,284 L 298,294 L 278,257 L 260,270 Z"
-          fill="url(#tzGoldCursor)"
-          stroke="#73470f"
-          strokeWidth="2.5"
-          strokeLinejoin="round"
+          d="M 256,62 Q 338,81 414,99 L 414,262 C 414,350 340,412 256,452 C 172,412 98,350 98,262 L 98,99 Q 174,81 256,62 Z"
+          fill="#754710"
         />
-      </g>
 
-      {/* LOWER GRAPHIC: 3D EMBOSSED KOREAN "탭존" */}
-      <g>
-        {/* '탭' */}
-        <rect x="164" y="278" width="10" height="54" rx="2" fill="url(#tzGoldEmblem)" />
-        <rect x="164" y="278" width="46" height="10" rx="2" fill="url(#tzGoldEmblem)" />
-        <rect x="164" y="300" width="42" height="10" rx="2" fill="url(#tzGoldEmblem)" />
-        <rect x="164" y="322" width="46" height="10" rx="2" fill="url(#tzGoldEmblem)" />
+        {/* Inner Gold Bevel Lip */}
+        <path
+          d="M 256,66 Q 335,84 408,102 L 408,260 C 408,345 336,406 256,446 C 176,406 104,345 104,260 L 104,102 Q 177,84 256,66 Z"
+          fill="url(#tzGoldInnerRim)"
+        />
 
-        {/* 'ㅐ' */}
-        <rect x="218" y="276" width="10" height="56" rx="2" fill="url(#tzGoldEmblem)" />
-        <rect x="226" y="299" width="16" height="10" rx="1" fill="url(#tzGoldEmblem)" />
-        <rect x="240" y="274" width="11" height="58" rx="2" fill="url(#tzGoldEmblem)" />
+        {/* Shield Navy Interior: Left Facet */}
+        <path
+          d="M 256,76 L 114,108 L 114,258 C 114,336 180,394 256,434 Z"
+          fill="url(#tzNavyLeft)"
+        />
 
-        {/* 'ㅂ' */}
-        <rect x="174" y="342" width="11" height="42" rx="2" fill="url(#tzGoldEmblem)" />
-        <rect x="230" y="342" width="11" height="42" rx="2" fill="url(#tzGoldEmblem)" />
-        <rect x="174" y="360" width="67" height="10" rx="1" fill="url(#tzGoldEmblem)" />
-        <rect x="174" y="374" width="67" height="10" rx="2" fill="url(#tzGoldEmblem)" />
+        {/* Shield Navy Interior: Right Facet */}
+        <path
+          d="M 256,76 L 398,108 L 398,258 C 398,336 332,394 256,434 Z"
+          fill="url(#tzNavyRight)"
+        />
 
-        {/* '존' */}
-        <rect x="270" y="278" width="76" height="10" rx="2" fill="url(#tzGoldEmblem)" />
-        <path d="M 312,286 L 274,328 L 286,328 L 318,286 Z" fill="url(#tzGoldEmblem)" />
-        <path d="M 304,286 L 334,328 L 346,328 L 314,286 Z" fill="url(#tzGoldEmblem)" />
+        {/* Subtle Center Vertical Specular Line */}
+        <line
+          x1="256"
+          y1="76"
+          x2="256"
+          y2="434"
+          stroke="#ffffff"
+          strokeWidth="1.2"
+          strokeOpacity="0.14"
+        />
 
-        {/* 'ㅗ' */}
-        <rect x="303" y="328" width="10" height="18" rx="2" fill="url(#tzGoldEmblem)" />
-        <rect x="262" y="342" width="92" height="10" rx="2" fill="url(#tzGoldEmblem)" />
+        {/* ================= CENTER TABLET (PORTRAIT) ================= */}
+        <g filter="url(#tz3dEmboss)">
+          {/* Golden Tablet Bezel Outer Frame (iPad-like proportion) */}
+          <rect
+            x="180"
+            y="132"
+            width="152"
+            height="236"
+            rx="20"
+            ry="20"
+            fill="none"
+            stroke="url(#tzGoldElement)"
+            strokeWidth="15"
+            strokeLinejoin="round"
+          />
 
-        {/* 'ㄴ' */}
-        <rect x="280" y="354" width="11" height="30" rx="2" fill="url(#tzGoldEmblem)" />
-        <rect x="280" y="374" width="62" height="10" rx="2" fill="url(#tzGoldEmblem)" />
+          {/* Dark Navy Screen Area */}
+          <rect
+            x="194"
+            y="157"
+            width="124"
+            height="186"
+            rx="6"
+            ry="6"
+            fill="url(#tzScreenDark)"
+          />
+
+          {/* Front Camera Dot (Top Bezel) */}
+          <circle cx="256" cy="144.5" r="4" fill="#0c1727" stroke="url(#tzGoldElement)" strokeWidth="1.6" />
+
+          {/* Home Button (Bottom Bezel) */}
+          <circle cx="256" cy="353.5" r="7.5" fill="#0c1727" stroke="url(#tzGoldElement)" strokeWidth="2.2" />
+        </g>
+
+        {/* ================= LEFT ELEMENT: 2-WAY CHECKOUT/RETURN ARC ================= */}
+        <g filter="url(#tz3dEmboss)">
+          {/* Top Arrowhead (Rotated along arc tangent ~ -14 deg) */}
+          <g transform="translate(141, 170) rotate(-14)">
+            <polygon points="0,-16 16,16 -16,16" fill="url(#tzGoldElement)" />
+          </g>
+
+          {/* Curved Connecting Arc Shaft */}
+          <path
+            d="M 139,184 C 108,222 108,278 139,316"
+            fill="none"
+            stroke="url(#tzGoldElement)"
+            strokeWidth="12"
+            strokeLinecap="round"
+          />
+
+          {/* Bottom Arrowhead (Rotated along arc tangent ~ 194 deg) */}
+          <g transform="translate(141, 330) rotate(194)">
+            <polygon points="0,-16 16,16 -16,16" fill="url(#tzGoldElement)" />
+          </g>
+        </g>
+
+        {/* ================= RIGHT ELEMENT: CIRCULATION CYCLE + STAR ================= */}
+        <g filter="url(#tz3dEmboss)">
+          {/* Top Arrowhead (Points up-right along circle ~ 18 deg) */}
+          <g transform="translate(371, 170) rotate(18)">
+            <polygon points="0,-16 16,16 -16,16" fill="url(#tzGoldElement)" />
+          </g>
+
+          {/* Top Curved Arc Shaft (Curving toward star) */}
+          <path
+            d="M 373,184 C 387,198 394,212 397,224"
+            fill="none"
+            stroke="url(#tzGoldElement)"
+            strokeWidth="11"
+            strokeLinecap="round"
+          />
+
+          {/* Center 5-Pointed Star */}
+          <g transform="translate(398, 250) rotate(10)">
+            <polygon
+              points="
+                0.0,-19.0
+                5.6,-7.6
+                18.1,-5.9
+                9.0,2.9
+                11.2,15.4
+                0.0,9.5
+                -11.2,15.4
+                -9.0,2.9
+                -18.1,-5.9
+                -5.6,-7.6"
+              fill="url(#tzGoldElement)"
+              stroke="#754710"
+              strokeWidth="1"
+              strokeLinejoin="round"
+            />
+          </g>
+
+          {/* Bottom Curved Arc Shaft (Curving from star down) */}
+          <path
+            d="M 397,276 C 394,288 387,302 373,316"
+            fill="none"
+            stroke="url(#tzGoldElement)"
+            strokeWidth="11"
+            strokeLinecap="round"
+          />
+
+          {/* Bottom Arrowhead (Points down-left along circle ~ 162 deg) */}
+          <g transform="translate(371, 330) rotate(162)">
+            <polygon points="0,-16 16,16 -16,16" fill="url(#tzGoldElement)" />
+          </g>
+        </g>
       </g>
     </svg>
   );
