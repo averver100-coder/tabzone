@@ -14,13 +14,13 @@ export interface OperatingHoursSchedule {
 }
 
 export const DEFAULT_OPERATING_HOURS: OperatingHoursSchedule = {
-  mon: '16:30',
-  tue: '16:30',
-  wed: '16:00',
-  thu: '16:00',
-  fri: '16:00',
-  sat: '16:00',
-  sun: '16:00',
+  mon: '16:00',
+  tue: '16:00',
+  wed: '15:30',
+  thu: '15:30',
+  fri: '15:30',
+  sat: '15:30',
+  sun: '15:30',
   autoReleaseWakeLockOnClosing: true,
 };
 

@@ -624,7 +624,7 @@ export const WhitelistModal: React.FC<WhitelistModalProps> = ({
                     className="text-xs text-amber-700 hover:text-amber-900 font-bold flex items-center gap-1 hover:underline cursor-pointer"
                   >
                     <RotateCcw className="w-3.5 h-3.5" />
-                    <span>기본값(월화 16:30 / 수목금 16:00) 복원</span>
+                    <span>기본값(월화 16:00 / 수목금 15:30) 복원</span>
                   </button>
                 </div>
                 <p className="text-xs text-amber-800 leading-relaxed font-medium">
@@ -643,7 +643,7 @@ export const WhitelistModal: React.FC<WhitelistModalProps> = ({
                       월요일 마감 시간
                     </span>
                     <span className="text-[11px] font-bold text-blue-600 bg-blue-50 px-2 py-0.5 rounded-full">
-                      스마트플러그 16:30
+                      스마트플러그 16:00
                     </span>
                   </div>
                   <input
@@ -653,7 +653,7 @@ export const WhitelistModal: React.FC<WhitelistModalProps> = ({
                     className="w-full h-11 px-3 rounded-xl border border-slate-300 font-mono text-sm font-bold text-slate-900 focus:ring-2 focus:ring-amber-500 focus:outline-none"
                   />
                   <div className="flex gap-1">
-                    {['16:00', '16:30', '17:00'].map((preset) => (
+                    {['15:30', '16:00', '16:30', '17:00'].map((preset) => (
                       <button
                         key={preset}
                         type="button"
@@ -674,7 +674,7 @@ export const WhitelistModal: React.FC<WhitelistModalProps> = ({
                       화요일 마감 시간
                     </span>
                     <span className="text-[11px] font-bold text-blue-600 bg-blue-50 px-2 py-0.5 rounded-full">
-                      스마트플러그 16:30
+                      스마트플러그 16:00
                     </span>
                   </div>
                   <input
@@ -684,7 +684,7 @@ export const WhitelistModal: React.FC<WhitelistModalProps> = ({
                     className="w-full h-11 px-3 rounded-xl border border-slate-300 font-mono text-sm font-bold text-slate-900 focus:ring-2 focus:ring-amber-500 focus:outline-none"
                   />
                   <div className="flex gap-1">
-                    {['16:00', '16:30', '17:00'].map((preset) => (
+                    {['15:30', '16:00', '16:30', '17:00'].map((preset) => (
                       <button
                         key={preset}
                         type="button"
@@ -705,7 +705,7 @@ export const WhitelistModal: React.FC<WhitelistModalProps> = ({
                       수요일 마감 시간
                     </span>
                     <span className="text-[11px] font-bold text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded-full">
-                      스마트플러그 16:00
+                      스마트플러그 15:30
                     </span>
                   </div>
                   <input
@@ -715,7 +715,7 @@ export const WhitelistModal: React.FC<WhitelistModalProps> = ({
                     className="w-full h-11 px-3 rounded-xl border border-slate-300 font-mono text-sm font-bold text-slate-900 focus:ring-2 focus:ring-amber-500 focus:outline-none"
                   />
                   <div className="flex gap-1">
-                    {['16:00', '16:30', '17:00'].map((preset) => (
+                    {['15:30', '16:00', '16:30', '17:00'].map((preset) => (
                       <button
                         key={preset}
                         type="button"
@@ -736,7 +736,7 @@ export const WhitelistModal: React.FC<WhitelistModalProps> = ({
                       목요일 마감 시간
                     </span>
                     <span className="text-[11px] font-bold text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded-full">
-                      스마트플러그 16:00
+                      스마트플러그 15:30
                     </span>
                   </div>
                   <input
@@ -746,7 +746,7 @@ export const WhitelistModal: React.FC<WhitelistModalProps> = ({
                     className="w-full h-11 px-3 rounded-xl border border-slate-300 font-mono text-sm font-bold text-slate-900 focus:ring-2 focus:ring-amber-500 focus:outline-none"
                   />
                   <div className="flex gap-1">
-                    {['16:00', '16:30', '17:00'].map((preset) => (
+                    {['15:30', '16:00', '16:30', '17:00'].map((preset) => (
                       <button
                         key={preset}
                         type="button"
@@ -767,7 +767,7 @@ export const WhitelistModal: React.FC<WhitelistModalProps> = ({
                       금요일 마감 시간
                     </span>
                     <span className="text-[11px] font-bold text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded-full">
-                      스마트플러그 16:00
+                      스마트플러그 15:30
                     </span>
                   </div>
                   <input
@@ -777,7 +777,7 @@ export const WhitelistModal: React.FC<WhitelistModalProps> = ({
                     className="w-full h-11 px-3 rounded-xl border border-slate-300 font-mono text-sm font-bold text-slate-900 focus:ring-2 focus:ring-amber-500 focus:outline-none"
                   />
                   <div className="flex gap-1">
-                    {['16:00', '16:30', '17:00'].map((preset) => (
+                    {['15:30', '16:00', '16:30', '17:00'].map((preset) => (
                       <button
                         key={preset}
                         type="button"

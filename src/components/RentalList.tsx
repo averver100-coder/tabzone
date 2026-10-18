@@ -103,7 +103,7 @@ export const RentalList: React.FC<RentalListProps> = ({
             <span>태블릿 대여 및 반납 현황</span>
             {isPast1630 && activeRentalsCount > 0 && (
               <span className="px-2 py-0.5 rounded-full bg-rose-100 text-rose-700 text-[10px] sm:text-[11px] font-black border border-rose-200 animate-pulse whitespace-nowrap">
-                16:30 일과 후 미반납 확인 필요
+                일과 마감 후 미반납 확인 필요
               </span>
             )}
           </h2>
@@ -341,7 +341,7 @@ export const RentalList: React.FC<RentalListProps> = ({
                       {isOverdue && (
                         <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-rose-600 text-white text-[11px] font-black shadow-2xs animate-pulse">
                           <AlertTriangle className="w-3 h-3 shrink-0" />
-                          <span>16:30 초과</span>
+                          <span>마감시간 초과</span>
                         </span>
                       )}
                       <span className="px-2.5 py-0.5 rounded-full bg-amber-100 text-amber-900 text-xs font-bold border border-amber-300 shadow-2xs">

@@ -42,13 +42,13 @@ export const DashboardStatus: React.FC<DashboardStatusProps> = ({
             </div>
             <div>
               <div className="text-base sm:text-lg font-black tracking-tight flex items-center gap-2">
-                <span>⚠️ 일과 마감(16:30) 경과 미반납 기기 경고</span>
+                <span>⚠️ 일과 마감시간 경과 미반납 기기 경고</span>
                 <span className="px-2 py-0.5 rounded-full bg-white text-red-600 font-black text-xs">
                   {overdueCount}건 미반납
                 </span>
               </div>
               <p className="text-xs sm:text-sm text-red-100 font-medium mt-0.5">
-                오후 4시 30분이 지났으나 아직 반납되지 않은 태블릿이 있습니다. 담당 교사 및 수업 장소를 확인 후 즉시 반납 처리를 진행해 주세요.
+                오늘 일과 마감시간이 지났으나 아직 반납되지 않은 태블릿이 있습니다. 담당 교사 및 수업 장소를 확인 후 즉시 반납 처리를 진행해 주세요.
               </p>
             </div>
           </div>
