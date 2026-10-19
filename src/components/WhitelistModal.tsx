@@ -22,7 +22,6 @@ import {
 } from 'lucide-react';
 import React, { useEffect, useState } from 'react';
 import { SUPER_ADMIN_EMAIL } from '../services/authService';
-import { DEFAULT_OPERATING_HOURS, OperatingHoursSchedule } from '../services/settingsService';
 import { Approver, Teacher, WhitelistUser } from '../types';
 
 interface WhitelistModalProps {
@@ -37,9 +36,7 @@ interface WhitelistModalProps {
   approvers: Approver[];
   onAddApprover: (approver: { name: string; position: string }) => Promise<void>;
   onRemoveApprover: (approverId: string, name: string) => Promise<void>;
-  operatingHours?: OperatingHoursSchedule;
-  onUpdateOperatingHours?: (hours: OperatingHoursSchedule) => Promise<void>;
-  initialTab?: 'whitelist' | 'teachers' | 'approvers' | 'hours';
+initialTab?: 'whitelist' | 'teachers' | 'approvers';
 }
 
 export const WhitelistModal: React.FC<WhitelistModalProps> = ({
@@ -54,11 +51,10 @@ export const WhitelistModal: React.FC<WhitelistModalProps> = ({
   approvers,
   onAddApprover,
   onRemoveApprover,
-  operatingHours = DEFAULT_OPERATING_HOURS,
-  onUpdateOperatingHours,
+  
   initialTab = 'whitelist',
 }) => {
-  const [activeTab, setActiveTab] = useState<'whitelist' | 'teachers' | 'approvers' | 'hours'>(initialTab);
+  const [activeTab, setActiveTab] = useState<'whitelist' | 'teachers' | 'approvers'>(initialTab);
 
   // Whitelist Form State
   const [newEmail, setNewEmail] = useState('');
@@ -73,14 +69,6 @@ export const WhitelistModal: React.FC<WhitelistModalProps> = ({
   const [approverName, setApproverName] = useState('');
   const [approverPosition, setApproverPosition] = useState('교육정보부');
 
-  // Operating Hours State
-  const [hoursForm, setHoursForm] = useState<OperatingHoursSchedule>(operatingHours);
-
-  useEffect(() => {
-    if (operatingHours) {
-      setHoursForm(operatingHours);
-    }
-  }, [operatingHours]);
 
   // Action status
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -217,31 +205,7 @@ export const WhitelistModal: React.FC<WhitelistModalProps> = ({
     }
   };
 
-  // 7. Save Operating Hours Schedule
-  const handleSaveOperatingHours = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!onUpdateOperatingHours) return;
-
-    try {
-      setIsSubmitting(true);
-      setMsg(null);
-      await onUpdateOperatingHours(hoursForm);
-      setMsg({
-        type: 'success',
-        text: '요일별 마감 시간 및 스마트 플러그 전원 연동 설정이 저장되었습니다.',
-      });
-    } catch (err: any) {
-      setMsg({ type: 'error', text: err.message || '운영 시간 저장 중 오류가 발생했습니다.' });
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
-
-  const handleResetDefaultHours = () => {
-    setHoursForm(DEFAULT_OPERATING_HOURS);
-  };
-
-  return (
+    return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-5 bg-black/50 overflow-hidden">
       <div className="w-full max-w-4xl bg-white rounded-3xl shadow-2xl border border-slate-200 overflow-hidden my-auto max-h-[92vh] flex flex-col">
         {/* Modal Top Header */}
@@ -308,18 +272,7 @@ export const WhitelistModal: React.FC<WhitelistModalProps> = ({
             <span>담당 교사 관리 ({teachers.length})</span>
           </button>
 
-          <button
-            type="button"
-            onClick={() => { setActiveTab('hours'); setMsg(null); }}
-            className={`h-12 px-5 rounded-t-2xl text-xs sm:text-sm font-black transition cursor-pointer flex items-center gap-2 border-b-2 whitespace-nowrap ${
-              activeTab === 'hours'
-                ? 'border-amber-600 bg-white text-amber-900 shadow-xs'
-                : 'border-transparent text-slate-500 hover:text-slate-800'
-            }`}
-          >
-            <Clock className="w-4 h-4 text-amber-600" />
-            <span>운영시간 & 마감 설정</span>
-          </button>
+          
         </div>
 
         {/* Modal Scrollable Body */}
@@ -609,242 +562,7 @@ export const WhitelistModal: React.FC<WhitelistModalProps> = ({
             </div>
           )}
 
-          {/* TAB 4: OPERATING HOURS & CLOSING TIME SETTINGS */}
-          {activeTab === 'hours' && (
-            <form onSubmit={handleSaveOperatingHours} className="space-y-6">
-              <div className="p-4 sm:p-5 rounded-2xl bg-amber-50/70 border border-amber-200/80 space-y-3">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2 text-sm font-black text-amber-900">
-                    <Clock className="w-5 h-5 text-amber-600" />
-                    <span>요일별 마감 시간 및 스마트 플러그 전원 연동</span>
                   </div>
-                  <button
-                    type="button"
-                    onClick={handleResetDefaultHours}
-                    className="text-xs text-amber-700 hover:text-amber-900 font-bold flex items-center gap-1 hover:underline cursor-pointer"
-                  >
-                    <RotateCcw className="w-3.5 h-3.5" />
-                    <span>기본값(월화 16:00 / 수목금 15:30) 복원</span>
-                  </button>
-                </div>
-                <p className="text-xs text-amber-800 leading-relaxed font-medium">
-                  스마트 플러그 및 교내 일과 시간에 맞추어 요일별 마감 시간을 지정할 수 있습니다. <br />
-                  마감 시간이 경과하거나 스마트 플러그 전원이 꺼지면 **Screen Wake Lock이 자동으로 해제되어 안드로이드 설정(30분)에 따라 태블릿 화면이 자동으로 꺼집니다.**
-                </p>
-              </div>
-
-              {/* Day-of-week Closing Time Grid */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3.5">
-                {/* Mon */}
-                <div className="p-3.5 rounded-2xl border border-slate-200 bg-white space-y-2">
-                  <div className="flex items-center justify-between">
-                    <span className="text-xs font-black text-slate-800 flex items-center gap-1.5">
-                      <span className="w-2 h-2 rounded-full bg-blue-500" />
-                      월요일 마감 시간
-                    </span>
-                    <span className="text-[11px] font-bold text-blue-600 bg-blue-50 px-2 py-0.5 rounded-full">
-                      스마트플러그 16:00
-                    </span>
-                  </div>
-                  <input
-                    type="time"
-                    value={hoursForm.mon}
-                    onChange={(e) => setHoursForm({ ...hoursForm, mon: e.target.value })}
-                    className="w-full h-11 px-3 rounded-xl border border-slate-300 font-mono text-sm font-bold text-slate-900 focus:ring-2 focus:ring-amber-500 focus:outline-none"
-                  />
-                  <div className="flex gap-1">
-                    {['15:30', '16:00', '16:30', '17:00'].map((preset) => (
-                      <button
-                        key={preset}
-                        type="button"
-                        onClick={() => setHoursForm({ ...hoursForm, mon: preset })}
-                        className={`text-[11px] font-bold px-2 py-1 rounded-lg border transition cursor-pointer ${hoursForm.mon === preset ? 'bg-amber-500 text-white border-amber-600' : 'bg-slate-100 text-slate-600 border-slate-200'}`}
-                      >
-                        {preset}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-
-                {/* Tue */}
-                <div className="p-3.5 rounded-2xl border border-slate-200 bg-white space-y-2">
-                  <div className="flex items-center justify-between">
-                    <span className="text-xs font-black text-slate-800 flex items-center gap-1.5">
-                      <span className="w-2 h-2 rounded-full bg-blue-500" />
-                      화요일 마감 시간
-                    </span>
-                    <span className="text-[11px] font-bold text-blue-600 bg-blue-50 px-2 py-0.5 rounded-full">
-                      스마트플러그 16:00
-                    </span>
-                  </div>
-                  <input
-                    type="time"
-                    value={hoursForm.tue}
-                    onChange={(e) => setHoursForm({ ...hoursForm, tue: e.target.value })}
-                    className="w-full h-11 px-3 rounded-xl border border-slate-300 font-mono text-sm font-bold text-slate-900 focus:ring-2 focus:ring-amber-500 focus:outline-none"
-                  />
-                  <div className="flex gap-1">
-                    {['15:30', '16:00', '16:30', '17:00'].map((preset) => (
-                      <button
-                        key={preset}
-                        type="button"
-                        onClick={() => setHoursForm({ ...hoursForm, tue: preset })}
-                        className={`text-[11px] font-bold px-2 py-1 rounded-lg border transition cursor-pointer ${hoursForm.tue === preset ? 'bg-amber-500 text-white border-amber-600' : 'bg-slate-100 text-slate-600 border-slate-200'}`}
-                      >
-                        {preset}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-
-                {/* Wed */}
-                <div className="p-3.5 rounded-2xl border border-slate-200 bg-white space-y-2">
-                  <div className="flex items-center justify-between">
-                    <span className="text-xs font-black text-slate-800 flex items-center gap-1.5">
-                      <span className="w-2 h-2 rounded-full bg-indigo-500" />
-                      수요일 마감 시간
-                    </span>
-                    <span className="text-[11px] font-bold text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded-full">
-                      스마트플러그 15:30
-                    </span>
-                  </div>
-                  <input
-                    type="time"
-                    value={hoursForm.wed}
-                    onChange={(e) => setHoursForm({ ...hoursForm, wed: e.target.value })}
-                    className="w-full h-11 px-3 rounded-xl border border-slate-300 font-mono text-sm font-bold text-slate-900 focus:ring-2 focus:ring-amber-500 focus:outline-none"
-                  />
-                  <div className="flex gap-1">
-                    {['15:30', '16:00', '16:30', '17:00'].map((preset) => (
-                      <button
-                        key={preset}
-                        type="button"
-                        onClick={() => setHoursForm({ ...hoursForm, wed: preset })}
-                        className={`text-[11px] font-bold px-2 py-1 rounded-lg border transition cursor-pointer ${hoursForm.wed === preset ? 'bg-amber-500 text-white border-amber-600' : 'bg-slate-100 text-slate-600 border-slate-200'}`}
-                      >
-                        {preset}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-
-                {/* Thu */}
-                <div className="p-3.5 rounded-2xl border border-slate-200 bg-white space-y-2">
-                  <div className="flex items-center justify-between">
-                    <span className="text-xs font-black text-slate-800 flex items-center gap-1.5">
-                      <span className="w-2 h-2 rounded-full bg-indigo-500" />
-                      목요일 마감 시간
-                    </span>
-                    <span className="text-[11px] font-bold text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded-full">
-                      스마트플러그 15:30
-                    </span>
-                  </div>
-                  <input
-                    type="time"
-                    value={hoursForm.thu}
-                    onChange={(e) => setHoursForm({ ...hoursForm, thu: e.target.value })}
-                    className="w-full h-11 px-3 rounded-xl border border-slate-300 font-mono text-sm font-bold text-slate-900 focus:ring-2 focus:ring-amber-500 focus:outline-none"
-                  />
-                  <div className="flex gap-1">
-                    {['15:30', '16:00', '16:30', '17:00'].map((preset) => (
-                      <button
-                        key={preset}
-                        type="button"
-                        onClick={() => setHoursForm({ ...hoursForm, thu: preset })}
-                        className={`text-[11px] font-bold px-2 py-1 rounded-lg border transition cursor-pointer ${hoursForm.thu === preset ? 'bg-amber-500 text-white border-amber-600' : 'bg-slate-100 text-slate-600 border-slate-200'}`}
-                      >
-                        {preset}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-
-                {/* Fri */}
-                <div className="p-3.5 rounded-2xl border border-slate-200 bg-white space-y-2">
-                  <div className="flex items-center justify-between">
-                    <span className="text-xs font-black text-slate-800 flex items-center gap-1.5">
-                      <span className="w-2 h-2 rounded-full bg-indigo-500" />
-                      금요일 마감 시간
-                    </span>
-                    <span className="text-[11px] font-bold text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded-full">
-                      스마트플러그 15:30
-                    </span>
-                  </div>
-                  <input
-                    type="time"
-                    value={hoursForm.fri}
-                    onChange={(e) => setHoursForm({ ...hoursForm, fri: e.target.value })}
-                    className="w-full h-11 px-3 rounded-xl border border-slate-300 font-mono text-sm font-bold text-slate-900 focus:ring-2 focus:ring-amber-500 focus:outline-none"
-                  />
-                  <div className="flex gap-1">
-                    {['15:30', '16:00', '16:30', '17:00'].map((preset) => (
-                      <button
-                        key={preset}
-                        type="button"
-                        onClick={() => setHoursForm({ ...hoursForm, fri: preset })}
-                        className={`text-[11px] font-bold px-2 py-1 rounded-lg border transition cursor-pointer ${hoursForm.fri === preset ? 'bg-amber-500 text-white border-amber-600' : 'bg-slate-100 text-slate-600 border-slate-200'}`}
-                      >
-                        {preset}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-
-                {/* Sat / Sun */}
-                <div className="p-3.5 rounded-2xl border border-slate-200 bg-slate-50/80 space-y-2">
-                  <div className="flex items-center justify-between">
-                    <span className="text-xs font-black text-slate-700">주말 (토/일) 마감 시간</span>
-                  </div>
-                  <input
-                    type="time"
-                    value={hoursForm.sat}
-                    onChange={(e) => setHoursForm({ ...hoursForm, sat: e.target.value, sun: e.target.value })}
-                    className="w-full h-11 px-3 rounded-xl border border-slate-300 font-mono text-sm font-bold text-slate-900 focus:ring-2 focus:ring-amber-500 focus:outline-none bg-white"
-                  />
-                  <div className="text-[11px] text-slate-500">주말 기본 마감시간 (동일 적용)</div>
-                </div>
-              </div>
-
-              {/* Auto Release WakeLock Toggle Option */}
-              <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200 flex items-center justify-between gap-4">
-                <div>
-                  <div className="text-sm font-black text-slate-900 flex items-center gap-2">
-                    <span>마감 시간 경과 및 전원 차단 시 화면 자동 꺼짐 수용</span>
-                    <span className="px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 text-[10px] font-bold">
-                      권장 (스마트 플러그 연동)
-                    </span>
-                  </div>
-                  <p className="text-xs text-slate-500 mt-1">
-                    마감 시간이 지나거나 충전기 전원이 꺼지면 Screen Wake Lock을 해제하여 안드로이드 설정(30분)에 따라 태블릿 화면이 자동으로 꺼지도록 합니다.
-                  </p>
-                </div>
-
-                <label className="relative inline-flex items-center cursor-pointer shrink-0">
-                  <input
-                    type="checkbox"
-                    checked={hoursForm.autoReleaseWakeLockOnClosing}
-                    onChange={(e) =>
-                      setHoursForm({ ...hoursForm, autoReleaseWakeLockOnClosing: e.target.checked })
-                    }
-                    className="sr-only peer"
-                  />
-                  <div className="w-11 h-6 bg-slate-300 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-amber-600" />
-                </label>
-              </div>
-
-              <div className="flex items-center justify-end gap-3 pt-2 border-t border-slate-100">
-                <button
-                  type="submit"
-                  disabled={isSubmitting}
-                  className="h-12 px-7 rounded-2xl bg-gradient-to-r from-amber-600 to-amber-700 hover:from-amber-700 hover:to-amber-800 active:scale-95 text-white font-black text-sm flex items-center gap-2 shadow-lg shadow-amber-600/25 transition cursor-pointer disabled:opacity-50"
-                >
-                  {isSubmitting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
-                  <span>요일별 마감 시간 저장하기</span>
-                </button>
-              </div>
-            </form>
-          )}
-        </div>
       </div>
     </div>
   );

@@ -13,8 +13,8 @@ interface DashboardStatusProps {
   totalAvailable: number;
   recommendedCart: CartType;
   activeRentalsCount: number;
-  isPast1630: boolean;
-  overdueCount: number;
+
+
   onOpenRentalModal: () => void;
 }
 
@@ -24,8 +24,8 @@ export const DashboardStatus: React.FC<DashboardStatusProps> = ({
   totalAvailable,
   recommendedCart,
   activeRentalsCount,
-  isPast1630,
-  overdueCount,
+
+
   onOpenRentalModal,
 }) => {
   const percentA = Math.round((cartA.available / cartA.total) * 100);
@@ -34,26 +34,7 @@ export const DashboardStatus: React.FC<DashboardStatusProps> = ({
   return (
     <div className="space-y-4">
       {/* 16:30 Overdue Alert Banner if active rentals exist past closing */}
-      {isPast1630 && overdueCount > 0 && (
-        <div className="p-4 rounded-2xl bg-gradient-to-r from-rose-600 to-red-600 text-white shadow-lg border border-red-400 animate-pulse flex items-center justify-between gap-4">
-          <div className="flex items-center gap-3">
-            <div className="w-12 h-12 rounded-xl bg-white/20 flex items-center justify-center shrink-0">
-              <AlertTriangle className="w-7 h-7 text-amber-300" />
-            </div>
-            <div>
-              <div className="text-base sm:text-lg font-black tracking-tight flex items-center gap-2">
-                <span>⚠️ 일과 마감시간 경과 미반납 기기 경고</span>
-                <span className="px-2 py-0.5 rounded-full bg-white text-red-600 font-black text-xs">
-                  {overdueCount}건 미반납
-                </span>
-              </div>
-              <p className="text-xs sm:text-sm text-red-100 font-medium mt-0.5">
-                오늘 일과 마감시간이 지났으나 아직 반납되지 않은 태블릿이 있습니다. 담당 교사 및 수업 장소를 확인 후 즉시 반납 처리를 진행해 주세요.
-              </p>
-            </div>
-          </div>
-        </div>
-      )}
+      
 
       {/* Main Storage Status Cards Grid (Compact 3-column optimization - reduced by ~30%) */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-2.5 sm:gap-3">

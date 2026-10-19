@@ -64,11 +64,6 @@ import {
 } from './services/rentalService';
 import {
   DEFAULT_OPERATING_HOURS,
-  getTodayClosingTime,
-  isPastClosingTime,
-  OperatingHoursSchedule,
-  subscribeToOperatingHours,
-  updateOperatingHours,
 } from './services/settingsService';
 import {
   addTeacher,
@@ -106,9 +101,6 @@ export default function App() {
   const [approvers, setApprovers] = useState<Approver[]>([]);
   const [auditLogs, setAuditLogs] = useState<AuditLog[]>([]);
   // Operating Hours State
-  const [operatingHours, setOperatingHours] = useState<OperatingHoursSchedule>(DEFAULT_OPERATING_HOURS);
-  const [todayClosingTime, setTodayClosingTime] = useState<string>(getTodayClosingTime(DEFAULT_OPERATING_HOURS));
-  const [isPast1630, setIsPast1630] = useState<boolean>(isPastClosingTime(DEFAULT_OPERATING_HOURS));
   const [isRentalModalOpen, setIsRentalModalOpen] = useState(false);
   const [isWhitelistModalOpen, setIsWhitelistModalOpen] = useState(false);
   const [isAuditLogsModalOpen, setIsAuditLogsModalOpen] = useState(false);
@@ -190,23 +182,15 @@ export default function App() {
       setIsAuthLoading(false);
     });
 
-    // Periodic time check for 16:30 overdue status
-    const timer = setInterval(() => {
-      setIsPast1630(isPastClosingTime());
-    }, 30000);
-
     return () => {
       unsubscribeAuth();
-      clearInterval(timer);
     };
   }, []);
 
-  // Screen Wake Lock API & Smart Charger / Operating Hours Power Detection
-  // When plugged in (charging) and during operating hours: Keep screen awake continuously for kiosk operation.
-  // When past closing time or unplugged (smart plug OFF): Release Wake Lock so Android 30-min screen timeout turns off screen natively!
+  // Screen Wake Lock API
   useEffect(() => {
     let wakeLock: any = null;
-    let isCharging = true; // Default to true if Battery API unavailable
+    let isMounted = true;
 
     const releaseWakeLock = async () => {
       if (wakeLock && typeof wakeLock.release === 'function' && !wakeLock.released) {
@@ -214,53 +198,33 @@ export default function App() {
           await wakeLock.release();
         } catch (_) {}
       }
+      wakeLock = null;
     };
 
     const requestWakeLock = async () => {
-      const pastClosing = isPastClosingTime(operatingHours);
-      if ((operatingHours.autoReleaseWakeLockOnClosing && pastClosing) || !isCharging) {
-        await releaseWakeLock();
-        return;
-      }
-
+      if (!isMounted) return;
       if (typeof navigator !== 'undefined' && 'wakeLock' in navigator) {
         try {
           if (!wakeLock || wakeLock.released) {
             wakeLock = await (navigator as any).wakeLock.request('screen');
+            if (wakeLock) {
+              wakeLock.addEventListener('release', () => {
+                wakeLock = null;
+                if (isMounted) {
+                  setTimeout(requestWakeLock, 1000);
+                }
+              });
+            }
           }
-        } catch (_) {}
+        } catch (err) {
+          if (isMounted) {
+            setTimeout(requestWakeLock, 3000);
+          }
+        }
       }
     };
 
-    // Monitor Battery Charging Status
-    if (typeof navigator !== 'undefined' && 'getBattery' in (navigator as any)) {
-      (navigator as any)
-        .getBattery()
-        .then((battery: any) => {
-          isCharging = battery.charging;
-          if (isCharging) {
-            requestWakeLock();
-          } else {
-            releaseWakeLock();
-          }
-
-          const onChargingChange = () => {
-            isCharging = battery.charging;
-            if (isCharging) {
-              requestWakeLock();
-            } else {
-              releaseWakeLock();
-            }
-          };
-
-          battery.addEventListener('chargingchange', onChargingChange);
-        })
-        .catch(() => {
-          requestWakeLock();
-        });
-    } else {
-      requestWakeLock();
-    }
+    requestWakeLock();
 
     const handleVisibilityChange = async () => {
       if (document.visibilityState === 'visible') {
@@ -269,23 +233,26 @@ export default function App() {
     };
 
     const handleUserInteraction = () => {
-      const pastClosing = isPastClosingTime(operatingHours);
-      if (isCharging && (!operatingHours.autoReleaseWakeLockOnClosing || !pastClosing)) {
-        if (!wakeLock || wakeLock.released) {
-          requestWakeLock();
-        }
-      }
+      requestWakeLock();
     };
+
+    const periodicTimer = setInterval(() => {
+      requestWakeLock();
+    }, 10000);
 
     document.addEventListener('visibilitychange', handleVisibilityChange);
     window.addEventListener('pointerdown', handleUserInteraction);
+    window.addEventListener('touchstart', handleUserInteraction);
 
     return () => {
+      isMounted = false;
       releaseWakeLock();
+      clearInterval(periodicTimer);
       document.removeEventListener('visibilitychange', handleVisibilityChange);
       window.removeEventListener('pointerdown', handleUserInteraction);
+      window.removeEventListener('touchstart', handleUserInteraction);
     };
-  }, [operatingHours]);
+  }, []);
 
   // 2. Real-time Subscriptions (Rentals, Whitelist, Teachers, Approvers, Audit Logs, Operating Hours)
   useEffect(() => {
@@ -293,11 +260,6 @@ export default function App() {
       setRentals(data);
     });
 
-    const unsubHours = subscribeToOperatingHours((schedule) => {
-      setOperatingHours(schedule);
-      setTodayClosingTime(getTodayClosingTime(schedule));
-      setIsPast1630(isPastClosingTime(schedule));
-    });
 
     const unsubWhitelist = subscribeToWhitelist((users) => {
       setWhitelistUsers(users);
@@ -317,8 +279,7 @@ export default function App() {
 
     return () => {
       unsubRentals();
-      unsubHours();
-      unsubWhitelist();
+        unsubWhitelist();
       unsubTeachers();
       unsubApprovers();
       unsubAudit();
@@ -645,9 +606,7 @@ export default function App() {
   const { cartA, cartB, totalAvailable } = calculateCartCapacities(rentals);
   const recommendedCart = getRecommendedCart(rentals);
   const activeRentals = rentals.filter((r) => r.status === '대여 중');
-  const overdueRentals = rentals.filter(
-    (r) => r.status === '대여 중' && isPast1630
-  );
+
 
   return (
     <div className="min-h-screen bg-slate-50 flex flex-col font-sans">
@@ -662,8 +621,8 @@ export default function App() {
         onOpenAuditLogs={() => setIsAuditLogsModalOpen(true)}
         onOpenAnalytics={() => setIsAnalyticsModalOpen(true)}
         onLogout={handleLogout}
-        isPast1630={isPast1630}
-        closingTimeStr={todayClosingTime}
+        
+        
         onOpenRentalModal={() => setIsRentalModalOpen(true)}
         onTriggerScreensaver={() => setIsIdle(true)}
       />
@@ -722,16 +681,15 @@ export default function App() {
           totalAvailable={totalAvailable}
           recommendedCart={recommendedCart}
           activeRentalsCount={activeRentals.length}
-          isPast1630={isPast1630}
-          overdueCount={overdueRentals.length}
-          onOpenRentalModal={() => setIsRentalModalOpen(true)}
+          
+                    onOpenRentalModal={() => setIsRentalModalOpen(true)}
         />
 
         {/* Rentals List (Real-time active rentals & returns) */}
         <RentalList
           rentals={rentals}
           approvers={approvers}
-          isPast1630={isPast1630}
+          
           onReturn={handleReturnRental}
           returningId={returningId}
         />
@@ -788,12 +746,6 @@ export default function App() {
         approvers={approvers}
         onAddApprover={handleAddApprover}
         onRemoveApprover={handleRemoveApprover}
-        operatingHours={operatingHours}
-        onUpdateOperatingHours={async (schedule) => {
-          const operatorEmail = currentUser?.email || SUPER_ADMIN_EMAIL;
-          await updateOperatingHours(schedule, operatorEmail);
-          showToast('요일별 마감 시간 설정이 성공적으로 저장되었습니다.');
-        }}
       />
 
       <AuditLogModal

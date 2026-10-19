@@ -26,7 +26,7 @@ import { WeeklyRentalChart } from './WeeklyRentalChart';
 interface RentalListProps {
   rentals: Rental[];
   approvers: Approver[];
-  isPast1630: boolean;
+
   onReturn: (
     rental: Rental,
     returnData: { returnApprover: string; returnNotes: string }
@@ -37,7 +37,7 @@ interface RentalListProps {
 export const RentalList: React.FC<RentalListProps> = ({
   rentals,
   approvers,
-  isPast1630,
+
   onReturn,
   returningId,
 }) => {
@@ -101,7 +101,7 @@ export const RentalList: React.FC<RentalListProps> = ({
         <div>
           <h2 className="text-base sm:text-lg font-black text-slate-900 flex items-center gap-2">
             <span>태블릿 대여 및 반납 현황</span>
-            {isPast1630 && activeRentalsCount > 0 && (
+            {false && activeRentalsCount > 0 && (
               <span className="px-2 py-0.5 rounded-full bg-rose-100 text-rose-700 text-[10px] sm:text-[11px] font-black border border-rose-200 animate-pulse whitespace-nowrap">
                 일과 마감 후 미반납 확인 필요
               </span>
@@ -215,7 +215,7 @@ export const RentalList: React.FC<RentalListProps> = ({
           </div>
         ) : (
           filteredRentals.slice(0, visibleCount).map((rental) => {
-            const isOverdue = isPast1630 && rental.status === '대여 중';
+            const isOverdue = false;
             const isCart1 = rental.cartUsed === '보관함 1' || rental.cartUsed === 'A보관함';
             const cartDisplay = isCart1 ? '보관함 1' : '보관함 2';
             const cartNum = isCart1 ? '1' : '2';

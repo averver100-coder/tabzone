@@ -23,8 +23,8 @@ interface HeaderProps {
   onOpenAuditLogs: () => void;
   onOpenAnalytics?: () => void;
   onLogout: () => void;
-  isPast1630: boolean;
-  closingTimeStr?: string;
+
+
   onOpenRentalModal?: () => void;
   onTriggerScreensaver?: () => void;
 }
@@ -36,8 +36,8 @@ export const Header: React.FC<HeaderProps> = ({
   onOpenAuditLogs,
   onOpenAnalytics,
   onLogout,
-  isPast1630,
-  closingTimeStr = '16:30',
+
+
   onOpenRentalModal,
   onTriggerScreensaver,
 }) => {
@@ -122,26 +122,18 @@ export const Header: React.FC<HeaderProps> = ({
         {/* Center Clock & Status Indicator (그라데이션 버튼 디자인) */}
         <div
           className={`flex items-center gap-2 sm:gap-2.5 px-3.5 sm:px-4 py-2 rounded-2xl shrink-0 ${
-            isPast1630
-              ? 'bg-gradient-to-r from-rose-500 via-rose-600 to-red-600 shadow-md shadow-rose-500/20 text-white'
-              : 'bg-gradient-to-r from-blue-600 via-indigo-600 to-violet-600 shadow-md shadow-indigo-600/20 text-white'
+'bg-gradient-to-r from-blue-600 via-indigo-600 to-violet-600 shadow-md shadow-indigo-600/20 text-white'
           } border border-white/20 select-none transition-all duration-300`}
         >
           <div className="w-5 h-5 rounded-lg bg-white/20 flex items-center justify-center backdrop-blur-xs shrink-0">
-            <Clock className={`w-3.5 h-3.5 text-white ${isPast1630 ? 'animate-pulse' : ''}`} />
+            <Clock className="w-3.5 h-3.5 text-white" />
           </div>
           <span className="text-xs sm:text-sm font-black tracking-tight text-white/95 whitespace-nowrap font-mono">
             {currentTime || '시각 동기화 중...'}
           </span>
-          {isPast1630 ? (
-            <span className="px-2 py-0.5 rounded-full bg-white/25 text-white text-[10px] sm:text-[11px] font-black border border-white/30 animate-pulse whitespace-nowrap">
-              {closingTimeStr} 마감 경과
-            </span>
-          ) : (
-            <span className="px-2 py-0.5 rounded-full bg-white/20 text-white text-[10px] sm:text-[11px] font-bold whitespace-nowrap">
-              LIVE
-            </span>
-          )}
+          <span className="px-2 py-0.5 rounded-full bg-white/20 text-white text-[10px] sm:text-[11px] font-bold whitespace-nowrap">
+            LIVE
+          </span>
         </div>
 
         {/* Action Controls & User Account */}
