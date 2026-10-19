@@ -7,7 +7,6 @@ import {
   Maximize2,
   Minimize2,
   Plus,
-  Settings,
   ShieldCheck,
   UserCheck,
 } from 'lucide-react';
@@ -237,17 +236,7 @@ export const Header: React.FC<HeaderProps> = ({
                 </button>
               </div>
             </div>
-          ) : (
-            <button
-              type="button"
-              onClick={onOpenLogin}
-              className="w-12 h-12 rounded-2xl bg-slate-100 hover:bg-slate-200 active:scale-95 text-slate-500 hover:text-slate-800 flex items-center justify-center transition cursor-pointer border border-slate-200/80 shadow-xs"
-              title="관리자 설정 (교직원 로그인)"
-              aria-label="관리자 설정"
-            >
-              <Settings className="w-6 h-6" />
-            </button>
-          )}
+          ) : null}
         </div>
       </div>
     </header>

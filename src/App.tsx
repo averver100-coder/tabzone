@@ -745,8 +745,17 @@ export default function App() {
 
       {/* Footer */}
       <footer className="mt-auto py-6 border-t border-slate-200 bg-white text-center text-xs text-slate-400 font-normal select-none">
-        <div className="max-w-[1440px] mx-auto px-4">
-          <p>Copyright 2026. 버버&amp;싱글라이더</p>
+        <div className="max-w-[1440px] mx-auto px-4 flex items-center justify-center gap-2">
+          <span>Copyright 2026. 버버&amp;싱글라이더</span>
+          <button
+            type="button"
+            onClick={() => (currentUser ? setIsWhitelistModalOpen(true) : setIsLoginModalOpen(true))}
+            className="w-6 h-6 sm:w-6.5 sm:h-6.5 rounded-md border border-slate-300 hover:border-slate-400 bg-white hover:bg-slate-50 active:scale-95 text-slate-400 hover:text-slate-600 transition flex items-center justify-center cursor-pointer shadow-2xs"
+            title="관리자 설정 (교직원 로그인)"
+            aria-label="관리자 설정"
+          >
+            <Lock className="w-3.5 h-3.5" />
+          </button>
         </div>
       </footer>
 
