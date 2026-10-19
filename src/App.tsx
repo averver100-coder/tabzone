@@ -187,10 +187,13 @@ export default function App() {
     };
   }, []);
 
-  // Screen Wake Lock API
+  // Smart Plug Power-Linked Screen Wake Lock
+  // - Plugged In / Charging (Smart Plug ON): Keep screen awake continuously for kiosk use
+  // - Unplugged / Discharging (Smart Plug OFF): Release Wake Lock immediately so Android screen timeout turns off screen natively
   useEffect(() => {
     let wakeLock: any = null;
     let isMounted = true;
+    let isCharging = true; // Default until Battery API responds
 
     const releaseWakeLock = async () => {
       if (wakeLock && typeof wakeLock.release === 'function' && !wakeLock.released) {
@@ -203,6 +206,12 @@ export default function App() {
 
     const requestWakeLock = async () => {
       if (!isMounted) return;
+      // If smart plug is OFF (not charging), do NOT hold wake lock
+      if (!isCharging) {
+        await releaseWakeLock();
+        return;
+      }
+
       if (typeof navigator !== 'undefined' && 'wakeLock' in navigator) {
         try {
           if (!wakeLock || wakeLock.released) {
@@ -210,34 +219,73 @@ export default function App() {
             if (wakeLock) {
               wakeLock.addEventListener('release', () => {
                 wakeLock = null;
-                if (isMounted) {
+                if (isMounted && isCharging) {
                   setTimeout(requestWakeLock, 1000);
                 }
               });
             }
           }
         } catch (err) {
-          if (isMounted) {
+          if (isMounted && isCharging) {
             setTimeout(requestWakeLock, 3000);
           }
         }
       }
     };
 
-    requestWakeLock();
+    // Monitor Battery Charging Status (Smart Plug ON/OFF detection)
+    if (typeof navigator !== 'undefined' && 'getBattery' in (navigator as any)) {
+      (navigator as any)
+        .getBattery()
+        .then((battery: any) => {
+          if (!isMounted) return;
+          isCharging = battery.charging;
+
+          if (isCharging) {
+            requestWakeLock();
+          } else {
+            releaseWakeLock();
+          }
+
+          const onChargingChange = () => {
+            if (!isMounted) return;
+            isCharging = battery.charging;
+            if (isCharging) {
+              requestWakeLock();
+            } else {
+              releaseWakeLock();
+            }
+          };
+
+          battery.addEventListener('chargingchange', onChargingChange);
+        })
+        .catch(() => {
+          // If Battery API is unavailable, maintain wake lock
+          requestWakeLock();
+        });
+    } else {
+      requestWakeLock();
+    }
 
     const handleVisibilityChange = async () => {
-      if (document.visibilityState === 'visible') {
+      if (document.visibilityState === 'visible' && isCharging) {
         await requestWakeLock();
       }
     };
 
     const handleUserInteraction = () => {
-      requestWakeLock();
+      if (isCharging) {
+        requestWakeLock();
+      }
     };
 
+    // Periodic heartbeat check: only maintain wake lock while smart plug is charging
     const periodicTimer = setInterval(() => {
-      requestWakeLock();
+      if (isCharging) {
+        requestWakeLock();
+      } else {
+        releaseWakeLock();
+      }
     }, 10000);
 
     document.addEventListener('visibilitychange', handleVisibilityChange);
