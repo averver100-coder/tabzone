@@ -15,3 +15,20 @@
     user-select: auto;
   }
 }
+
+@keyframes screensaverPulse {
+  0%, 100% {
+    opacity: 1;
+    transform: scale(1);
+    filter: drop-shadow(0 0 35px rgba(245, 158, 11, 0.45));
+  }
+  50% {
+    opacity: 0.35;
+    transform: scale(0.96);
+    filter: drop-shadow(0 0 10px rgba(245, 158, 11, 0.15));
+  }
+}
+
+.animate-screensaver-pulse {
+  animation: screensaverPulse 4s ease-in-out infinite;
+}

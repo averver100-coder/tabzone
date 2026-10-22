@@ -9,7 +9,6 @@ import {
 } from 'lucide-react';
 import React, { useEffect, useState } from 'react';
 import { formatCartName, Rental } from '../types';
-import { TabZoneLogo } from './TabZoneLogo';
 
 interface IdleSplashScreenProps {
   isOpen: boolean;
@@ -78,8 +77,12 @@ export const IdleSplashScreen: React.FC<IdleSplashScreenProps> = ({
       <header className="relative z-10 w-full px-8 py-6 sm:px-12 sm:py-8 flex items-center justify-between border-b border-white/5 backdrop-blur-md bg-white/[0.02]">
         <div className="flex items-center gap-3">
           <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-amber-400 to-amber-600 p-0.5 shadow-lg shadow-amber-500/20">
-            <div className="w-full h-full rounded-[10px] bg-slate-900 flex items-center justify-center">
-              <ShieldCheck className="w-5 h-5 text-amber-400" />
+            <div className="w-full h-full rounded-[10px] bg-slate-900 flex items-center justify-center p-1 overflow-hidden">
+              <img
+                src="/school-logo.png"
+                alt="상일미디어고등학교 로고"
+                className="w-full h-full object-contain rounded-full"
+              />
             </div>
           </div>
           <div>
@@ -107,11 +110,23 @@ export const IdleSplashScreen: React.FC<IdleSplashScreenProps> = ({
 
       {/* CENTER CONTENT: Brand Logo, Headline & Prominent Rental CTA */}
       <main className="relative z-10 flex-1 flex flex-col items-center justify-center px-6 py-8 text-center max-w-4xl mx-auto w-full">
-        {/* Floating 3D Logo with glow effect */}
-        <div className="relative mb-6 group">
-          <div className="absolute inset-0 rounded-full bg-amber-400/20 blur-2xl transform scale-125 animate-pulse" />
-          <div className="relative transform hover:scale-105 transition-transform duration-500 drop-shadow-[0_20px_35px_rgba(217,119,6,0.3)]">
-            <TabZoneLogo className="w-32 h-32 sm:w-40 sm:h-40" />
+        {/* Floating School Emblem Logo with slow breathing glow (commute.srdier.kr screensaver style) */}
+        <div className="relative mb-6 group flex items-center justify-center">
+          {/* Ambient warm golden glow backlight */}
+          <div className="absolute w-44 h-44 sm:w-56 sm:h-56 rounded-full bg-gradient-to-r from-amber-500/25 via-yellow-500/20 to-amber-600/25 blur-3xl pointer-events-none" />
+
+          {/* Glowing slow-pulsing school emblem badge */}
+          <div className="relative animate-screensaver-pulse select-none flex items-center justify-center">
+            {/* Outer golden circular glow ring */}
+            <div className="w-36 h-36 sm:w-44 sm:h-44 md:w-48 md:h-48 rounded-full p-2 bg-gradient-to-b from-amber-400/40 via-amber-500/20 to-amber-600/40 border border-amber-400/50 shadow-[0_0_50px_rgba(245,158,11,0.35)] flex items-center justify-center backdrop-blur-xs">
+              <div className="w-full h-full rounded-full bg-white flex items-center justify-center overflow-hidden p-1 shadow-inner border border-amber-300/30">
+                <img
+                  src="/school-logo.png"
+                  alt="상일미디어고등학교 로고"
+                  className="w-full h-full object-contain rounded-full"
+                />
+              </div>
+            </div>
           </div>
         </div>
 
