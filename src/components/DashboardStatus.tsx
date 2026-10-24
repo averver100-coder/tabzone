@@ -1,10 +1,15 @@
 import {
   AlertTriangle,
   ArrowRight,
+  Battery,
+  BatteryCharging,
+  PlugZap,
   Sparkles,
   Tablet,
+  ZapOff,
 } from 'lucide-react';
 import React from 'react';
+import { useBatteryStatus } from '../hooks/useBatteryStatus';
 import { CartCapacity, CartType } from '../types';
 
 interface DashboardStatusProps {
@@ -13,8 +18,6 @@ interface DashboardStatusProps {
   totalAvailable: number;
   recommendedCart: CartType;
   activeRentalsCount: number;
-
-
   onOpenRentalModal: () => void;
 }
 
@@ -24,19 +27,78 @@ export const DashboardStatus: React.FC<DashboardStatusProps> = ({
   totalAvailable,
   recommendedCart,
   activeRentalsCount,
-
-
   onOpenRentalModal,
 }) => {
   const percentA = Math.round((cartA.available / cartA.total) * 100);
   const percentB = Math.round((cartB.available / cartB.total) * 100);
+  const battery = useBatteryStatus();
 
   return (
-    <div className="space-y-4">
-      {/* 16:30 Overdue Alert Banner if active rentals exist past closing */}
-      
+    <div className="space-y-3">
+      {/* Smart Plug Power & Device Battery Status Indicator */}
+      <div
+        className={`px-3 sm:px-4 py-2 rounded-xl border flex flex-col sm:flex-row sm:items-center justify-between gap-2 shadow-2xs select-none transition-colors ${
+          battery.charging
+            ? 'bg-gradient-to-r from-emerald-50 via-teal-50/40 to-white border-emerald-200/90 text-emerald-900'
+            : 'bg-gradient-to-r from-rose-50 via-amber-50/40 to-white border-rose-200/90 text-rose-900'
+        }`}
+      >
+        <div className="flex items-center gap-2.5 flex-wrap">
+          <div
+            className={`w-7 h-7 rounded-lg flex items-center justify-center shrink-0 ${
+              battery.charging
+                ? 'bg-emerald-500 text-white shadow-xs shadow-emerald-500/30'
+                : 'bg-rose-500 text-white shadow-xs shadow-rose-500/30'
+            }`}
+          >
+            {battery.charging ? (
+              <PlugZap className="w-4 h-4 animate-pulse" />
+            ) : (
+              <ZapOff className="w-4 h-4" />
+            )}
+          </div>
+          <div className="flex items-center gap-1.5 flex-wrap text-xs sm:text-sm">
+            <span className="font-extrabold text-slate-800">스마트플러그:</span>
+            <span
+              className={`font-black px-2 py-0.5 rounded-md inline-flex items-center gap-1.5 border text-xs ${
+                battery.charging
+                  ? 'bg-emerald-100/90 text-emerald-800 border-emerald-300'
+                  : 'bg-rose-100/90 text-rose-800 border-rose-300'
+              }`}
+            >
+              <span
+                className={`w-2 h-2 rounded-full ${
+                  battery.charging ? 'bg-emerald-500 animate-ping' : 'bg-rose-500'
+                }`}
+              />
+              {battery.charging ? '전원 공급 중 (충전 중)' : '전원 차단됨 (방전 중)'}
+            </span>
+            <span className="text-slate-300 font-bold hidden sm:inline">|</span>
+            <span className="inline-flex items-center gap-1 font-bold text-slate-700 text-xs">
+              {battery.charging ? (
+                <BatteryCharging className="w-4 h-4 text-emerald-600" />
+              ) : (
+                <Battery className="w-4 h-4 text-rose-600" />
+              )}
+              <span>기기 배터리 {battery.level}%</span>
+            </span>
+          </div>
+        </div>
 
-      {/* Main Storage Status Cards Grid (Compact 3-column optimization - reduced by ~30%) */}
+        <div className="text-[11px] font-semibold flex items-center gap-1.5 self-end sm:self-auto">
+          {battery.charging ? (
+            <span className="text-emerald-700 bg-white/90 px-2.5 py-0.5 rounded-full border border-emerald-200 shadow-2xs">
+              ⚡ 화면 켜짐 유지(Wake Lock) 가동 중
+            </span>
+          ) : (
+            <span className="text-rose-700 bg-white/90 px-2.5 py-0.5 rounded-full border border-rose-200 shadow-2xs">
+              ⏳ 화면 유지 해제 (기기 설정 시간 후 자동 절전)
+            </span>
+          )}
+        </div>
+      </div>
+
+      {/* Main Storage Status Cards Grid (Compact 3-column optimization) */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-2.5 sm:gap-3">
         {/* Cart 1 Card */}
         <div
@@ -186,9 +248,25 @@ export const DashboardStatus: React.FC<DashboardStatusProps> = ({
                 <Tablet className="w-3.5 h-3.5 text-blue-400" />
                 전체 보유 수량
               </span>
-              <span className="px-1.5 py-0.2 rounded-md bg-slate-700/80 border border-slate-600 text-slate-200 text-[10px] font-semibold">
-                실시간
-              </span>
+              <div className="flex items-center gap-1.5">
+                <span
+                  className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-bold border ${
+                    battery.charging
+                      ? 'bg-emerald-950/70 border-emerald-500/50 text-emerald-300'
+                      : 'bg-rose-950/70 border-rose-500/50 text-rose-300'
+                  }`}
+                >
+                  {battery.charging ? (
+                    <PlugZap className="w-3 h-3 text-emerald-400 animate-pulse" />
+                  ) : (
+                    <ZapOff className="w-3 h-3 text-rose-400" />
+                  )}
+                  <span>{battery.charging ? '충전 중' : '방전 중'} {battery.level}%</span>
+                </span>
+                <span className="px-1.5 py-0.2 rounded-md bg-slate-700/80 border border-slate-600 text-slate-200 text-[10px] font-semibold">
+                  실시간
+                </span>
+              </div>
             </div>
 
             <div className="mt-0.5 flex items-baseline gap-1.5 leading-tight">
