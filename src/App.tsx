@@ -21,6 +21,7 @@ import {
   Users,
 } from 'lucide-react';
 import React, { useEffect, useState } from 'react';
+import { playReturnSuccessSound } from './utils/sound';
 import { AdminAnalyticsModal } from './components/AdminAnalyticsModal';
 import { AuditLogModal } from './components/AuditLogModal';
 import { DashboardStatus } from './components/DashboardStatus';
@@ -551,6 +552,7 @@ export default function App() {
             : r
         )
       );
+      playReturnSuccessSound();
       const notePreview = returnData.returnNotes ? ` [비고: ${returnData.returnNotes}]` : '';
       showToast(
         `📦 ${rental.teacherName} (${rental.gradeClass}) ${rental.cartUsed} ${rental.quantity}대 반납이 완료되었습니다. (반납승인: ${returnData.returnApprover})${notePreview}`
