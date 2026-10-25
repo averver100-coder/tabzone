@@ -32,3 +32,16 @@
 .animate-screensaver-pulse {
   animation: screensaverPulse 4s ease-in-out infinite;
 }
+
+@keyframes returnSuccessGlow {
+  0%, 100% {
+    box-shadow: 0 0 0 2px rgba(16, 185, 129, 0.4), 0 4px 12px rgba(16, 185, 129, 0.15);
+  }
+  50% {
+    box-shadow: 0 0 0 3.5px rgba(16, 185, 129, 0.8), 0 6px 18px rgba(16, 185, 129, 0.3);
+  }
+}
+
+.animate-return-success {
+  animation: returnSuccessGlow 2.5s ease-in-out infinite;
+}

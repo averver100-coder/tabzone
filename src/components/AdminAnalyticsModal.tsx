@@ -50,7 +50,7 @@ interface AdminAnalyticsModalProps {
   currentUser: AuthUser | null;
 }
 
-type TabType = 'weekday-period' | 'trends' | 'teacher-grade' | 'raw-data';
+type TabType = 'weekday-period' | 'trends' | 'teacher-grade' | 'approvers' | 'raw-data';
 type MetricView = 'count' | 'quantity';
 
 const DAY_NAMES = ['일', '월', '화', '수', '목', '금', '토'];
@@ -401,6 +401,91 @@ export const AdminAnalyticsModal: React.FC<AdminAnalyticsModalProps> = ({
   // Reset to page 1 on filter changes
   const resetPage = () => setCurrentPage(1);
 
+  // 11-1. Analytics: Rental Approver Ranking (대여 승인자 순위)
+  const rentalApproverData = useMemo(() => {
+    const map = new Map<string, { name: string; position: string; count: number; quantity: number }>();
+
+    filteredRentals.forEach((r) => {
+      const name = (r.approver || '미지정').trim();
+      const pos = approvers.find((a) => a.name === name)?.position || '교직원';
+      const entry = map.get(name) || { name, position: pos, count: 0, quantity: 0 };
+      entry.count += 1;
+      entry.quantity += r.quantity || 0;
+      map.set(name, entry);
+    });
+
+    return Array.from(map.values()).sort(
+      (a, b) => b.count - a.count || b.quantity - a.quantity
+    );
+  }, [filteredRentals, approvers]);
+
+  // 11-2. Analytics: Return Approver Ranking (반납 승인자 순위)
+  const returnApproverData = useMemo(() => {
+    const map = new Map<string, { name: string; position: string; count: number; quantity: number }>();
+
+    filteredRentals.forEach((r) => {
+      if (r.status !== '반납 완료' && !r.returnApprover) return;
+      const name = (r.returnApprover || '미지정/자동').trim();
+      const pos = approvers.find((a) => a.name === name)?.position || '교직원';
+      const entry = map.get(name) || { name, position: pos, count: 0, quantity: 0 };
+      entry.count += 1;
+      entry.quantity += r.quantity || 0;
+      map.set(name, entry);
+    });
+
+    return Array.from(map.values()).sort(
+      (a, b) => b.count - a.count || b.quantity - a.quantity
+    );
+  }, [filteredRentals, approvers]);
+
+  // 11-3. Analytics: Combined Comparison (대여승인 vs 반납승인 비교)
+  const combinedApproverData = useMemo(() => {
+    const map = new Map<string, {
+      name: string;
+      position: string;
+      rentalCount: number;
+      rentalQuantity: number;
+      returnCount: number;
+      returnQuantity: number;
+      totalActions: number;
+    }>();
+
+    rentalApproverData.forEach((ra) => {
+      map.set(ra.name, {
+        name: ra.name,
+        position: ra.position,
+        rentalCount: ra.count,
+        rentalQuantity: ra.quantity,
+        returnCount: 0,
+        returnQuantity: 0,
+        totalActions: ra.count,
+      });
+    });
+
+    returnApproverData.forEach((retA) => {
+      const existing = map.get(retA.name);
+      if (existing) {
+        existing.returnCount = retA.count;
+        existing.returnQuantity = retA.quantity;
+        existing.totalActions += retA.count;
+      } else {
+        map.set(retA.name, {
+          name: retA.name,
+          position: retA.position,
+          rentalCount: 0,
+          rentalQuantity: 0,
+          returnCount: retA.count,
+          returnQuantity: retA.quantity,
+          totalActions: retA.count,
+        });
+      }
+    });
+
+    return Array.from(map.values())
+      .sort((a, b) => b.totalActions - a.totalActions || b.rentalCount - a.rentalCount)
+      .slice(0, 10);
+  }, [rentalApproverData, returnApproverData]);
+
   // 12. Excel Export Functionality (.xlsx)
   const handleExportExcel = () => {
     try {
@@ -413,6 +498,7 @@ export const AdminAnalyticsModal: React.FC<AdminAnalyticsModalProps> = ({
         '학생대표': r.studentRep || '-',
         '대여보관함': r.cartUsed || '-',
         '대여수량(대)': r.quantity || 0,
+        '대여승인자': r.approver || '-',
         '대여상태': r.status || '-',
         '반납일시': r.returnedAt ? new Date(r.returnedAt).toLocaleString('ko-KR') : '-',
         '반납승인자': r.returnApprover || '-',
@@ -796,6 +882,19 @@ export const AdminAnalyticsModal: React.FC<AdminAnalyticsModalProps> = ({
 
           <button
             type="button"
+            onClick={() => setActiveTab('approvers')}
+            className={`px-4 py-2.5 rounded-t-xl text-xs sm:text-sm font-bold transition flex items-center gap-1.5 border-t border-x cursor-pointer ${
+              activeTab === 'approvers'
+                ? 'bg-white border-slate-200 text-blue-700 shadow-xs font-black'
+                : 'border-transparent text-slate-600 hover:text-slate-900'
+            }`}
+          >
+            <ShieldCheck className="w-4 h-4 text-emerald-600" />
+            <span>승인자별 통계 (대여·반납)</span>
+          </button>
+
+          <button
+            type="button"
             onClick={() => setActiveTab('raw-data')}
             className={`px-4 py-2.5 rounded-t-xl text-xs sm:text-sm font-bold transition flex items-center gap-1.5 border-t border-x cursor-pointer ${
               activeTab === 'raw-data'
@@ -1172,6 +1271,389 @@ export const AdminAnalyticsModal: React.FC<AdminAnalyticsModalProps> = ({
                       </div>
                     </div>
                   ))}
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* TAB 4: 대여·반납 승인자별 통계 */}
+          {activeTab === 'approvers' && (
+            <div className="space-y-6 animate-in fade-in duration-150">
+              {/* Approvers KPI Top Summary Cards */}
+              <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+                <div className="p-4 rounded-2xl bg-gradient-to-br from-blue-50 to-indigo-50/50 border border-blue-200/80 shadow-2xs">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-bold text-blue-900">총 대여 승인</span>
+                    <div className="w-7 h-7 rounded-lg bg-blue-600 text-white flex items-center justify-center">
+                      <ShieldCheck className="w-4 h-4" />
+                    </div>
+                  </div>
+                  <div className="mt-2 flex items-baseline gap-1.5">
+                    <span className="text-2xl font-black text-blue-700">{summary.totalCount}</span>
+                    <span className="text-xs font-bold text-blue-600">건</span>
+                  </div>
+                  <p className="text-[11px] text-blue-800/80 mt-1 font-medium">
+                    대여 승인 교직원 {rentalApproverData.length}명 활동
+                  </p>
+                </div>
+
+                <div className="p-4 rounded-2xl bg-gradient-to-br from-indigo-50 to-purple-50/50 border border-indigo-200/80 shadow-2xs">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-bold text-indigo-900">최다 대여 승인자</span>
+                    <div className="w-7 h-7 rounded-lg bg-indigo-600 text-white flex items-center justify-center">
+                      <Sparkles className="w-4 h-4" />
+                    </div>
+                  </div>
+                  <div className="mt-2 flex items-baseline gap-1.5">
+                    <span className="text-xl font-black text-indigo-700 truncate">
+                      {rentalApproverData[0]?.name || '-'}
+                    </span>
+                    <span className="text-xs font-bold text-indigo-600">
+                      ({rentalApproverData[0]?.count || 0}건)
+                    </span>
+                  </div>
+                  <p className="text-[11px] text-indigo-800/80 mt-1 font-medium">
+                    총 {rentalApproverData[0]?.quantity || 0}대 태블릿 대여 승인
+                  </p>
+                </div>
+
+                <div className="p-4 rounded-2xl bg-gradient-to-br from-emerald-50 to-teal-50/50 border border-emerald-200/80 shadow-2xs">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-bold text-emerald-900">총 반납 승인</span>
+                    <div className="w-7 h-7 rounded-lg bg-emerald-600 text-white flex items-center justify-center">
+                      <CheckCircle className="w-4 h-4" />
+                    </div>
+                  </div>
+                  <div className="mt-2 flex items-baseline gap-1.5">
+                    <span className="text-2xl font-black text-emerald-700">{summary.returnedCount}</span>
+                    <span className="text-xs font-bold text-emerald-600">건</span>
+                  </div>
+                  <p className="text-[11px] text-emerald-800/80 mt-1 font-medium">
+                    반납 확인 교직원 {returnApproverData.length}명 활동
+                  </p>
+                </div>
+
+                <div className="p-4 rounded-2xl bg-gradient-to-br from-teal-50 to-cyan-50/50 border border-teal-200/80 shadow-2xs">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-bold text-teal-900">최다 반납 승인자</span>
+                    <div className="w-7 h-7 rounded-lg bg-teal-600 text-white flex items-center justify-center">
+                      <Sparkles className="w-4 h-4" />
+                    </div>
+                  </div>
+                  <div className="mt-2 flex items-baseline gap-1.5">
+                    <span className="text-xl font-black text-teal-700 truncate">
+                      {returnApproverData[0]?.name || '-'}
+                    </span>
+                    <span className="text-xs font-bold text-teal-600">
+                      ({returnApproverData[0]?.count || 0}건)
+                    </span>
+                  </div>
+                  <p className="text-[11px] text-teal-800/80 mt-1 font-medium">
+                    총 {returnApproverData[0]?.quantity || 0}대 태블릿 반납 검수
+                  </p>
+                </div>
+              </div>
+
+              {/* 2-Column Ranking Charts: Rental Approvers vs Return Approvers */}
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                {/* 1. 대여 승인자 순위 차트 */}
+                <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-xs space-y-3">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <div className="w-8 h-8 rounded-lg bg-blue-100 text-blue-700 flex items-center justify-center">
+                        <ShieldCheck className="w-4 h-4" />
+                      </div>
+                      <div>
+                        <h3 className="text-sm sm:text-base font-black text-slate-900">
+                          대여 승인자별 빈도 순위 (Top 10)
+                        </h3>
+                        <p className="text-[11px] text-slate-500">
+                          대여 신청을 승인한 담당 교직원별 통계
+                        </p>
+                      </div>
+                    </div>
+                    <span className="text-xs font-bold text-blue-600">
+                      {metricView === 'count' ? '승인 건수 기준' : '승인 대수 기준'}
+                    </span>
+                  </div>
+
+                  <div className="h-64 w-full pt-2">
+                    {rentalApproverData.length === 0 ? (
+                      <div className="h-full flex items-center justify-center text-xs text-slate-400">
+                        데이터가 없습니다.
+                      </div>
+                    ) : (
+                      <ResponsiveContainer width="100%" height="100%">
+                        <BarChart
+                          data={rentalApproverData.slice(0, 10)}
+                          layout="vertical"
+                          margin={{ top: 5, right: 20, left: 35, bottom: 5 }}
+                        >
+                          <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="#f1f5f9" />
+                          <XAxis type="number" tick={{ fontSize: 10, fill: '#64748b' }} allowDecimals={false} />
+                          <YAxis
+                            type="category"
+                            dataKey="name"
+                            tick={{ fontSize: 11, fill: '#334155', fontWeight: 'bold' }}
+                            width={80}
+                          />
+                          <Tooltip
+                            formatter={(value: any) => [
+                              `${value} ${metricView === 'count' ? '건' : '대'}`,
+                              metricView === 'count' ? '대여 승인 건수' : '대여 대수',
+                            ]}
+                            contentStyle={{
+                              borderRadius: '12px',
+                              border: '1px solid #e2e8f0',
+                              boxShadow: '0 4px 12px rgba(0,0,0,0.08)',
+                              fontSize: '12px',
+                              fontWeight: 'bold',
+                            }}
+                          />
+                          <Bar
+                            dataKey={metricView === 'count' ? 'count' : 'quantity'}
+                            fill="#3b82f6"
+                            radius={[0, 6, 6, 0]}
+                            maxBarSize={20}
+                          />
+                        </BarChart>
+                      </ResponsiveContainer>
+                    )}
+                  </div>
+                </div>
+
+                {/* 2. 반납 승인자 순위 차트 */}
+                <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-xs space-y-3">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <div className="w-8 h-8 rounded-lg bg-emerald-100 text-emerald-700 flex items-center justify-center">
+                        <CheckCircle className="w-4 h-4" />
+                      </div>
+                      <div>
+                        <h3 className="text-sm sm:text-base font-black text-slate-900">
+                          반납 승인자별 빈도 순위 (Top 10)
+                        </h3>
+                        <p className="text-[11px] text-slate-500">
+                          태블릿 반납을 최종 확인·승인한 담당 교직원별 통계
+                        </p>
+                      </div>
+                    </div>
+                    <span className="text-xs font-bold text-emerald-600">
+                      {metricView === 'count' ? '반납 건수 기준' : '반납 대수 기준'}
+                    </span>
+                  </div>
+
+                  <div className="h-64 w-full pt-2">
+                    {returnApproverData.length === 0 ? (
+                      <div className="h-full flex items-center justify-center text-xs text-slate-400">
+                        반납 승인 데이터가 없습니다.
+                      </div>
+                    ) : (
+                      <ResponsiveContainer width="100%" height="100%">
+                        <BarChart
+                          data={returnApproverData.slice(0, 10)}
+                          layout="vertical"
+                          margin={{ top: 5, right: 20, left: 35, bottom: 5 }}
+                        >
+                          <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="#f1f5f9" />
+                          <XAxis type="number" tick={{ fontSize: 10, fill: '#64748b' }} allowDecimals={false} />
+                          <YAxis
+                            type="category"
+                            dataKey="name"
+                            tick={{ fontSize: 11, fill: '#334155', fontWeight: 'bold' }}
+                            width={80}
+                          />
+                          <Tooltip
+                            formatter={(value: any) => [
+                              `${value} ${metricView === 'count' ? '건' : '대'}`,
+                              metricView === 'count' ? '반납 승인 건수' : '반납 대수',
+                            ]}
+                            contentStyle={{
+                              borderRadius: '12px',
+                              border: '1px solid #e2e8f0',
+                              boxShadow: '0 4px 12px rgba(0,0,0,0.08)',
+                              fontSize: '12px',
+                              fontWeight: 'bold',
+                            }}
+                          />
+                          <Bar
+                            dataKey={metricView === 'count' ? 'count' : 'quantity'}
+                            fill="#10b981"
+                            radius={[0, 6, 6, 0]}
+                            maxBarSize={20}
+                          />
+                        </BarChart>
+                      </ResponsiveContainer>
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              {/* 3. Combined Comparison Bar Chart (대여승인 vs 반납승인 비교) */}
+              <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-xs space-y-3">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <div className="w-8 h-8 rounded-lg bg-indigo-100 text-indigo-700 flex items-center justify-center">
+                      <BarChart2 className="w-4 h-4" />
+                    </div>
+                    <div>
+                      <h3 className="text-sm sm:text-base font-black text-slate-900">
+                        승인자별 대여 승인 vs 반납 승인 교차 비교
+                      </h3>
+                      <p className="text-[11px] text-slate-500">
+                        주요 교직원별 대여 업무(블루)와 반납 확인(에메랄드) 참여 건수 비교
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="h-72 w-full pt-2">
+                  {combinedApproverData.length === 0 ? (
+                    <div className="h-full flex items-center justify-center text-xs text-slate-400">
+                      데이터가 없습니다.
+                    </div>
+                  ) : (
+                    <ResponsiveContainer width="100%" height="100%">
+                      <BarChart
+                        data={combinedApproverData}
+                        margin={{ top: 10, right: 20, left: 10, bottom: 25 }}
+                      >
+                        <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
+                        <XAxis
+                          dataKey="name"
+                          tick={{ fontSize: 11, fill: '#334155', fontWeight: 'bold' }}
+                          interval={0}
+                        />
+                        <YAxis tick={{ fontSize: 10, fill: '#64748b' }} allowDecimals={false} />
+                        <Tooltip
+                          formatter={(value: any, name: any) => [
+                            `${value}건`,
+                            name === 'rentalCount' ? '대여 승인' : '반납 승인',
+                          ]}
+                          contentStyle={{
+                            borderRadius: '12px',
+                            border: '1px solid #e2e8f0',
+                            boxShadow: '0 4px 12px rgba(0,0,0,0.08)',
+                            fontSize: '12px',
+                            fontWeight: 'bold',
+                          }}
+                        />
+                        <Legend
+                          verticalAlign="top"
+                          align="right"
+                          iconType="circle"
+                          formatter={(value) => (value === 'rentalCount' ? '대여 승인 건수' : '반납 승인 건수')}
+                        />
+                        <Bar dataKey="rentalCount" fill="#3b82f6" radius={[4, 4, 0, 0]} maxBarSize={28} />
+                        <Bar dataKey="returnCount" fill="#10b981" radius={[4, 4, 0, 0]} maxBarSize={28} />
+                      </BarChart>
+                    </ResponsiveContainer>
+                  )}
+                </div>
+              </div>
+
+              {/* 4. Detailed Ranking Tables: Rental Approvers & Return Approvers */}
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                {/* 대여 승인자 상세 테이블 */}
+                <div className="bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-xs">
+                  <div className="p-4 bg-slate-50 border-b border-slate-200 flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <ShieldCheck className="w-4 h-4 text-blue-600" />
+                      <h4 className="text-xs sm:text-sm font-black text-slate-800">
+                        대여 승인자 상세 통계 ({rentalApproverData.length}명)
+                      </h4>
+                    </div>
+                  </div>
+                  <div className="overflow-x-auto max-h-80 overflow-y-auto">
+                    <table className="w-full text-left text-xs">
+                      <thead className="bg-slate-100/70 border-b border-slate-200 text-slate-600 font-extrabold sticky top-0 bg-slate-100">
+                        <tr>
+                          <th className="py-2.5 px-3 text-center w-12">순위</th>
+                          <th className="py-2.5 px-3">승인자명</th>
+                          <th className="py-2.5 px-3">직책/소속</th>
+                          <th className="py-2.5 px-3 text-right">대여 승인</th>
+                          <th className="py-2.5 px-3 text-right">승인 수량</th>
+                          <th className="py-2.5 px-3 text-right">점유율</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-slate-100">
+                        {rentalApproverData.map((a, idx) => {
+                          const share = summary.totalCount > 0 ? Math.round((a.count / summary.totalCount) * 100) : 0;
+                          return (
+                            <tr key={a.name} className="hover:bg-slate-50/80 transition-colors">
+                              <td className="py-2.5 px-3 text-center font-bold text-slate-500">
+                                {idx < 3 ? (
+                                  <span className={`inline-flex items-center justify-center w-5 h-5 rounded-full text-[10px] font-black text-white ${
+                                    idx === 0 ? 'bg-amber-500' : idx === 1 ? 'bg-slate-400' : 'bg-amber-700'
+                                  }`}>
+                                    {idx + 1}
+                                  </span>
+                                ) : (
+                                  idx + 1
+                                )}
+                              </td>
+                              <td className="py-2.5 px-3 font-bold text-slate-900">{a.name}</td>
+                              <td className="py-2.5 px-3 text-slate-500">{a.position}</td>
+                              <td className="py-2.5 px-3 text-right font-black text-blue-600">{a.count}건</td>
+                              <td className="py-2.5 px-3 text-right text-slate-700 font-bold">{a.quantity}대</td>
+                              <td className="py-2.5 px-3 text-right font-bold text-slate-600">{share}%</td>
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+
+                {/* 반납 승인자 상세 테이블 */}
+                <div className="bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-xs">
+                  <div className="p-4 bg-slate-50 border-b border-slate-200 flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <CheckCircle className="w-4 h-4 text-emerald-600" />
+                      <h4 className="text-xs sm:text-sm font-black text-slate-800">
+                        반납 승인자 상세 통계 ({returnApproverData.length}명)
+                      </h4>
+                    </div>
+                  </div>
+                  <div className="overflow-x-auto max-h-80 overflow-y-auto">
+                    <table className="w-full text-left text-xs">
+                      <thead className="bg-slate-100/70 border-b border-slate-200 text-slate-600 font-extrabold sticky top-0 bg-slate-100">
+                        <tr>
+                          <th className="py-2.5 px-3 text-center w-12">순위</th>
+                          <th className="py-2.5 px-3">승인자명</th>
+                          <th className="py-2.5 px-3">직책/소속</th>
+                          <th className="py-2.5 px-3 text-right">반납 승인</th>
+                          <th className="py-2.5 px-3 text-right">반납 수량</th>
+                          <th className="py-2.5 px-3 text-right">반납 점유율</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-slate-100">
+                        {returnApproverData.map((a, idx) => {
+                          const share = summary.returnedCount > 0 ? Math.round((a.count / summary.returnedCount) * 100) : 0;
+                          return (
+                            <tr key={a.name} className="hover:bg-slate-50/80 transition-colors">
+                              <td className="py-2.5 px-3 text-center font-bold text-slate-500">
+                                {idx < 3 ? (
+                                  <span className={`inline-flex items-center justify-center w-5 h-5 rounded-full text-[10px] font-black text-white ${
+                                    idx === 0 ? 'bg-emerald-500' : idx === 1 ? 'bg-slate-400' : 'bg-amber-700'
+                                  }`}>
+                                    {idx + 1}
+                                  </span>
+                                ) : (
+                                  idx + 1
+                                )}
+                              </td>
+                              <td className="py-2.5 px-3 font-bold text-slate-900">{a.name}</td>
+                              <td className="py-2.5 px-3 text-slate-500">{a.position}</td>
+                              <td className="py-2.5 px-3 text-right font-black text-emerald-600">{a.count}건</td>
+                              <td className="py-2.5 px-3 text-right text-slate-700 font-bold">{a.quantity}대</td>
+                              <td className="py-2.5 px-3 text-right font-bold text-slate-600">{share}%</td>
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                    </table>
+                  </div>
                 </div>
               </div>
             </div>

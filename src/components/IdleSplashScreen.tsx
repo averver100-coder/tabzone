@@ -8,6 +8,7 @@ import {
   Tablet,
 } from 'lucide-react';
 import React, { useEffect, useState } from 'react';
+import { calculateCartCapacities } from '../services/rentalService';
 import { formatCartName, Rental } from '../types';
 
 interface IdleSplashScreenProps {
@@ -50,10 +51,10 @@ export const IdleSplashScreen: React.FC<IdleSplashScreenProps> = ({
 
   if (!isOpen) return null;
 
-  // Calculate cart usage
-  const activeRentals = rentals.filter((r) => r.status === '대여 중');
-  const cart1Rented = activeRentals.some((r) => formatCartName(r.cartUsed) === '보관함 1');
-  const cart2Rented = activeRentals.some((r) => formatCartName(r.cartUsed) === '보관함 2');
+  // Calculate cart capacities and available tablet counts
+  const { cartA, cartB, totalAvailable } = calculateCartCapacities(rentals);
+  const cart1Rented = cartA.available === 0;
+  const cart2Rented = cartB.available === 0;
 
   const handleRentalClick = (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -130,9 +131,40 @@ export const IdleSplashScreen: React.FC<IdleSplashScreenProps> = ({
           </div>
         </div>
 
-        <h2 className="text-3xl sm:text-5xl font-extrabold tracking-tight text-white mb-8 sm:mb-10 leading-tight drop-shadow-md">
+        <h2 className="text-3xl sm:text-5xl font-extrabold tracking-tight text-white mb-4 sm:mb-5 leading-tight drop-shadow-md">
           태블릿이 필요하신가요?
         </h2>
+
+        {/* Real-time Available Tablets Count Pill */}
+        <div className="inline-flex items-center gap-2.5 px-4 py-1.5 sm:px-5 sm:py-2 rounded-full bg-slate-900/60 backdrop-blur-md border border-white/15 shadow-xl text-slate-200 text-xs sm:text-sm font-semibold select-none mb-7 animate-in fade-in">
+          <div className="flex items-center gap-2">
+            <span className="relative flex h-2.5 w-2.5">
+              <span
+                className={`animate-ping absolute inline-flex h-full w-full rounded-full opacity-75 ${
+                  totalAvailable > 0 ? 'bg-emerald-400' : 'bg-rose-400'
+                }`}
+              />
+              <span
+                className={`relative inline-flex rounded-full h-2.5 w-2.5 ${
+                  totalAvailable > 0 ? 'bg-emerald-500' : 'bg-rose-500'
+                }`}
+              />
+            </span>
+            <Tablet className="w-3.5 h-3.5 text-blue-400" />
+            <span className="text-slate-300">현재 대여 가능:</span>
+          </div>
+
+          <div className="flex items-baseline gap-1">
+            <span
+              className={`text-base sm:text-lg font-black font-mono tracking-tight ${
+                totalAvailable > 0 ? 'text-emerald-400' : 'text-rose-400'
+              }`}
+            >
+              {totalAvailable}대
+            </span>
+            <span className="text-[11px] text-slate-400 font-medium">/ 60대</span>
+          </div>
+        </div>
 
         {/* HIGHLIGHTED '대여하기' BUTTON (PROMINENT KIOSK CTA) */}
         <div className="relative mb-8 group">
@@ -152,65 +184,73 @@ export const IdleSplashScreen: React.FC<IdleSplashScreenProps> = ({
         </div>
 
         {/* Quick Tablet Cart Live Availability Cards */}
-        <div className="grid grid-cols-2 gap-4 w-full max-w-md mb-2">
+        <div className="grid grid-cols-2 gap-3.5 sm:gap-4 w-full max-w-md mb-2">
           {/* Cart 1 */}
           <div
-            className={`p-4 rounded-xl border transition-all ${
+            className={`p-3.5 sm:p-4 rounded-2xl border transition-all ${
               cart1Rented
-                ? 'bg-amber-950/20 border-amber-500/30 text-amber-200'
-                : 'bg-emerald-950/20 border-emerald-500/30 text-emerald-200'
-            } backdrop-blur-sm flex items-center justify-between`}
+                ? 'bg-rose-950/20 border-rose-500/30 text-rose-200'
+                : 'bg-slate-900/50 border-white/10 text-slate-200 hover:border-emerald-500/40'
+            } backdrop-blur-md flex items-center justify-between`}
           >
             <div className="flex items-center gap-3">
               <div
-                className={`w-9 h-9 rounded-lg flex items-center justify-center font-black ${
-                  cart1Rented ? 'bg-amber-500/20 text-amber-400' : 'bg-emerald-500/20 text-emerald-400'
+                className={`w-9 h-9 rounded-xl flex items-center justify-center font-black text-sm ${
+                  cart1Rented ? 'bg-rose-500/20 text-rose-400 border border-rose-500/30' : 'bg-blue-500/20 text-blue-400 border border-blue-500/30'
                 }`}
               >
                 1
               </div>
               <div className="text-left">
                 <div className="text-xs text-slate-400">1호 충전함</div>
-                <div className="text-sm font-bold">보관함 1</div>
+                <div className="text-xs sm:text-sm font-black text-white">보관함 1</div>
               </div>
             </div>
-            <span
-              className={`text-xs px-2.5 py-1 rounded-full font-semibold ${
-                cart1Rented ? 'bg-amber-500/20 text-amber-300' : 'bg-emerald-500/20 text-emerald-300'
-              }`}
-            >
-              {cart1Rented ? '대여중' : '대여 가능'}
-            </span>
+            <div className="text-right">
+              <span
+                className={`text-xs px-2.5 py-1 rounded-full font-bold ${
+                  cartA.available > 0
+                    ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-400/30'
+                    : 'bg-rose-500/20 text-rose-300 border border-rose-400/30'
+                }`}
+              >
+                {cartA.available > 0 ? `${cartA.available}대 가능` : '전량 대여중'}
+              </span>
+            </div>
           </div>
 
           {/* Cart 2 */}
           <div
-            className={`p-4 rounded-xl border transition-all ${
+            className={`p-3.5 sm:p-4 rounded-2xl border transition-all ${
               cart2Rented
-                ? 'bg-amber-950/20 border-amber-500/30 text-amber-200'
-                : 'bg-emerald-950/20 border-emerald-500/30 text-emerald-200'
-            } backdrop-blur-sm flex items-center justify-between`}
+                ? 'bg-rose-950/20 border-rose-500/30 text-rose-200'
+                : 'bg-slate-900/50 border-white/10 text-slate-200 hover:border-emerald-500/40'
+            } backdrop-blur-md flex items-center justify-between`}
           >
             <div className="flex items-center gap-3">
               <div
-                className={`w-9 h-9 rounded-lg flex items-center justify-center font-black ${
-                  cart2Rented ? 'bg-amber-500/20 text-amber-400' : 'bg-emerald-500/20 text-emerald-400'
+                className={`w-9 h-9 rounded-xl flex items-center justify-center font-black text-sm ${
+                  cart2Rented ? 'bg-rose-500/20 text-rose-400 border border-rose-500/30' : 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30'
                 }`}
               >
                 2
               </div>
               <div className="text-left">
                 <div className="text-xs text-slate-400">2호 충전함</div>
-                <div className="text-sm font-bold">보관함 2</div>
+                <div className="text-xs sm:text-sm font-black text-white">보관함 2</div>
               </div>
             </div>
-            <span
-              className={`text-xs px-2.5 py-1 rounded-full font-semibold ${
-                cart2Rented ? 'bg-amber-500/20 text-amber-300' : 'bg-emerald-500/20 text-emerald-300'
-              }`}
-            >
-              {cart2Rented ? '대여중' : '대여 가능'}
-            </span>
+            <div className="text-right">
+              <span
+                className={`text-xs px-2.5 py-1 rounded-full font-bold ${
+                  cartB.available > 0
+                    ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-400/30'
+                    : 'bg-rose-500/20 text-rose-300 border border-rose-400/30'
+                }`}
+              >
+                {cartB.available > 0 ? `${cartB.available}대 가능` : '전량 대여중'}
+              </span>
+            </div>
           </div>
         </div>
       </main>
