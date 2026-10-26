@@ -5,36 +5,46 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
     <title>탭존 (TabZone) - 스마트 태블릿 대여 관리</title>
     <meta name="description" content="학교 현장을 위한 직관적인 태블릿 대여 및 반납 키오스크 시스템" />
-    
+
     <!-- OpenGraph Meta -->
     <meta property="og:title" content="탭존 (TabZone) - 스마트 태블릿 대여 관리" />
     <meta property="og:description" content="학교 현장을 위한 직관적인 태블릿 대여 및 반납 키오스크 시스템" />
     <meta property="og:type" content="website" />
     <meta property="og:url" content="https://tab.srider.kr" />
     <meta name="twitter:card" content="summary_large_image" />
-    
-    <!-- PWA & Mobile Web App Meta (출퇴근 히어로 표준 PWA 방식) -->
-    <link rel="manifest" href="/manifest.webmanifest" />
+
+    <!-- PWA & Mobile Web App Meta (쌤타임 ttime.srider.kr 동일 완전 독립실행형 규격) -->
     <meta name="theme-color" content="#1e3a8a" />
     <meta name="mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
     <meta name="apple-mobile-web-app-title" content="탭존" />
-    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
-    <link rel="icon" type="image/svg+xml" href="/icon.svg" />
+    <meta name="full-screen" content="yes" />
+    <meta name="browsermode" content="application" />
+    <meta name="screen-orientation" content="any" />
+    <meta name="x5-fullscreen" content="true" />
+    <meta name="x5-page-mode" content="app" />
+    <link rel="manifest" href="/manifest.webmanifest" />
+    <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
     <link rel="icon" type="image/png" sizes="192x192" href="/pwa-192x192.png" />
-    <link rel="icon" type="image/png" sizes="64x64" href="/favicon.ico" />
-    
-    <!-- PWA Install Early Prompt Capture (i-pass 동일 방식) -->
+    <link rel="icon" type="image/png" sizes="512x512" href="/pwa-512x512.png" />
+    <link rel="icon" type="image/svg+xml" href="/icon.svg" />
+    <link rel="shortcut icon" href="/favicon.ico" />
+
+    <!-- PWA Install Early Prompt Capture (ttime.srider.kr 완벽 호환 방식) -->
     <script>
       window.deferredPWAInstallPrompt = null;
+      window.__pwaInstallPrompt = null;
       window.addEventListener('beforeinstallprompt', function(e) {
         e.preventDefault();
         window.deferredPWAInstallPrompt = e;
-        window.dispatchEvent(new CustomEvent('pwa-prompt-available'));
+        window.__pwaInstallPrompt = e;
+        window.dispatchEvent(new CustomEvent('pwa-prompt-available', { detail: e }));
+        window.dispatchEvent(new CustomEvent('pwa-prompt-ready', { detail: e }));
       });
       window.addEventListener('appinstalled', function() {
         window.deferredPWAInstallPrompt = null;
+        window.__pwaInstallPrompt = null;
         window.dispatchEvent(new CustomEvent('pwa-installed'));
       });
     </script>

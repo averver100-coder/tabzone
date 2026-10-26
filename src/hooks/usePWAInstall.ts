@@ -8,6 +8,7 @@ export interface BeforeInstallPromptEvent extends Event {
 declare global {
   interface Window {
     deferredPWAInstallPrompt?: BeforeInstallPromptEvent | null;
+    __pwaInstallPrompt?: BeforeInstallPromptEvent | null;
   }
 }
 
@@ -18,8 +19,8 @@ declare global {
  */
 export function usePWAInstall() {
   const [deferredPrompt, setDeferredPrompt] = useState<BeforeInstallPromptEvent | null>(() => {
-    if (typeof window !== 'undefined' && window.deferredPWAInstallPrompt) {
-      return window.deferredPWAInstallPrompt;
+    if (typeof window !== 'undefined') {
+      return window.deferredPWAInstallPrompt || window.__pwaInstallPrompt || null;
     }
     return null;
   });
@@ -31,6 +32,8 @@ export function usePWAInstall() {
     const checkInstalled = () => {
       const isStandalone =
         window.matchMedia('(display-mode: standalone)').matches ||
+        window.matchMedia('(display-mode: fullscreen)').matches ||
+        window.matchMedia('(display-mode: minimal-ui)').matches ||
         (window.navigator as unknown as { standalone?: boolean }).standalone === true ||
         document.referrer.includes('android-app://');
       setIsInstalled(isStandalone);
@@ -74,6 +77,7 @@ export function usePWAInstall() {
 
     window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
     window.addEventListener('pwa-prompt-available', handlePromptAvailable);
+    window.addEventListener('pwa-prompt-ready', handlePromptAvailable);
     window.addEventListener('appinstalled', handleAppInstalled);
     window.addEventListener('pwa-installed', handleAppInstalled);
 
@@ -83,6 +87,7 @@ export function usePWAInstall() {
       }
       window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
       window.removeEventListener('pwa-prompt-available', handlePromptAvailable);
+      window.removeEventListener('pwa-prompt-ready', handlePromptAvailable);
       window.removeEventListener('appinstalled', handleAppInstalled);
       window.removeEventListener('pwa-installed', handleAppInstalled);
     };

@@ -1,14 +1,21 @@
 {
-  "id": "/",
   "name": "탭존 (TabZone) - 스마트 태블릿 대여 관리",
   "short_name": "탭존",
-  "description": "학교 현장을 위한 스마트 태블릿 대여 및 반납 관리 시스템 (tab.srider.kr)",
-  "theme_color": "#1e3a8a",
-  "background_color": "#ffffff",
-  "display": "standalone",
-  "orientation": "any",
+  "description": "상일미디어고등학교 스마트 태블릿 대여 및 반납 관리 시스템 (tab.srider.kr)",
   "start_url": "/",
+  "display": "standalone",
+  "display_override": [
+    "fullscreen",
+    "standalone",
+    "window-controls-overlay"
+  ],
+  "background_color": "#1e3a8a",
+  "theme_color": "#1e3a8a",
+  "lang": "ko",
   "scope": "/",
+  "id": "/",
+  "orientation": "any",
+  "prefer_related_applications": false,
   "icons": [
     {
       "src": "/pwa-192x192.png",
@@ -27,6 +34,12 @@
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "maskable"
+    },
+    {
+      "src": "/apple-touch-icon.png",
+      "sizes": "180x180",
+      "type": "image/png",
+      "purpose": "any"
     }
   ]
 }
