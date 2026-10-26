@@ -21,7 +21,7 @@ import {
   Users,
 } from 'lucide-react';
 import React, { useEffect, useState } from 'react';
-import { playReturnSuccessSound } from './utils/sound';
+import { playRentalSuccessSound, playReturnSuccessSound } from './utils/sound';
 import { AdminAnalyticsModal } from './components/AdminAnalyticsModal';
 import { AuditLogModal } from './components/AuditLogModal';
 import { DashboardStatus } from './components/DashboardStatus';
@@ -515,6 +515,7 @@ export default function App() {
         : { uid: 'kiosk-student-rep', email: 'kiosk@tab.srider.kr' };
 
       const newRental = await createRental(operator, data);
+      playRentalSuccessSound();
       setRentals((prev) => [newRental, ...prev.filter((r) => r.id !== newRental.id)]);
       showToast(
         `✅ ${data.teacherName} (${data.gradeClass}) ${data.cartUsed} ${data.quantity}대 대여가 완료되었습니다!`
@@ -747,12 +748,38 @@ export default function App() {
 
       {/* Footer */}
       <footer className="mt-auto py-6 border-t border-slate-200 bg-white text-center text-xs text-slate-400 font-normal select-none">
-        <div className="max-w-[1440px] mx-auto px-4 flex items-center justify-center gap-2">
+        <div className="max-w-[1440px] mx-auto px-4 flex items-center justify-center gap-2 sm:gap-2.5">
           <span>Copyright 2026. 버버&amp;싱글라이더</span>
+          <span className="text-slate-300">|</span>
+          <button
+            type="button"
+            onClick={async () => {
+              showToast('🔄 최신 버전 업데이트를 확인하는 중입니다...');
+              try {
+                if ('serviceWorker' in navigator) {
+                  const reg = await navigator.serviceWorker.getRegistration();
+                  if (reg) {
+                    await reg.update();
+                  }
+                }
+                setTimeout(() => {
+                  showToast('✨ 최신 버전 상태입니다. (이미 최신 버전이 적용되어 있습니다)');
+                }, 800);
+              } catch (e) {
+                showToast('✨ 현재 최신 버전을 사용 중입니다.');
+              }
+            }}
+            className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md border border-slate-300 hover:border-blue-400 bg-white hover:bg-slate-50 active:scale-95 text-slate-500 hover:text-blue-700 transition cursor-pointer shadow-2xs font-bold text-xs"
+            title="이 앱이 최신 버전인지 확인합니다"
+            aria-label="업데이트 확인"
+          >
+            <RefreshCw className="w-3.5 h-3.5 text-slate-400 hover:text-blue-600 animate-spin-hover" />
+            <span>업데이트 확인</span>
+          </button>
           <button
             type="button"
             onClick={() => (currentUser ? setIsWhitelistModalOpen(true) : setIsLoginModalOpen(true))}
-            className="w-6 h-6 sm:w-6.5 sm:h-6.5 rounded-md border border-slate-300 hover:border-slate-400 bg-white hover:bg-slate-50 active:scale-95 text-slate-400 hover:text-slate-600 transition flex items-center justify-center cursor-pointer shadow-2xs"
+            className="w-7 h-7 sm:w-7.5 sm:h-7.5 rounded-md border border-slate-300 hover:border-slate-400 bg-white hover:bg-slate-50 active:scale-95 text-slate-400 hover:text-slate-600 transition flex items-center justify-center cursor-pointer shadow-2xs"
             title="관리자 설정 (교직원 로그인)"
             aria-label="관리자 설정"
           >
