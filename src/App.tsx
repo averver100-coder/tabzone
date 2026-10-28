@@ -21,6 +21,7 @@ import {
   Users,
 } from 'lucide-react';
 import React, { useEffect, useState } from 'react';
+import { APP_VERSION } from './constants/version';
 import { playRentalSuccessSound, playReturnSuccessSound } from './utils/sound';
 import { AdminAnalyticsModal } from './components/AdminAnalyticsModal';
 import { AuditLogModal } from './components/AuditLogModal';
@@ -754,7 +755,7 @@ export default function App() {
           <button
             type="button"
             onClick={async () => {
-              showToast('🔄 최신 버전 업데이트를 확인하는 중입니다...');
+              showToast(`🔄 최신 릴리즈(${APP_VERSION}) 업데이트를 확인하는 중입니다...`);
               try {
                 if ('serviceWorker' in navigator) {
                   const reg = await navigator.serviceWorker.getRegistration();
@@ -763,14 +764,14 @@ export default function App() {
                   }
                 }
                 setTimeout(() => {
-                  showToast('✨ 최신 버전 상태입니다. (이미 최신 버전이 적용되어 있습니다)');
+                  showToast(`✨ 최신 버전(${APP_VERSION}) 상태입니다. (이미 최신 버전이 적용되어 있습니다)`);
                 }, 800);
               } catch (e) {
-                showToast('✨ 현재 최신 버전을 사용 중입니다.');
+                showToast(`✨ 현재 최신 버전(${APP_VERSION})을 사용 중입니다.`);
               }
             }}
             className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md border border-slate-300 hover:border-blue-400 bg-white hover:bg-slate-50 active:scale-95 text-slate-500 hover:text-blue-700 transition cursor-pointer shadow-2xs font-bold text-xs"
-            title="이 앱이 최신 버전인지 확인합니다"
+            title={`최신 버전 확인 (현재 릴리즈: ${APP_VERSION})`}
             aria-label="업데이트 확인"
           >
             <RefreshCw className="w-3.5 h-3.5 text-slate-400 hover:text-blue-600 animate-spin-hover" />
