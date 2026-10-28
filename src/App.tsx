@@ -761,11 +761,16 @@ export default function App() {
                   const reg = await navigator.serviceWorker.getRegistration();
                   if (reg) {
                     await reg.update();
+                    if (reg.waiting) {
+                      reg.waiting.postMessage({ type: 'SKIP_WAITING' });
+                      window.dispatchEvent(new CustomEvent('pwa-show-update-prompt'));
+                      return;
+                    }
                   }
                 }
                 setTimeout(() => {
                   showToast(`✨ 최신 버전(${APP_VERSION}) 상태입니다. (이미 최신 버전이 적용되어 있습니다)`);
-                }, 800);
+                }, 600);
               } catch (e) {
                 showToast(`✨ 현재 최신 버전(${APP_VERSION})을 사용 중입니다.`);
               }
@@ -776,6 +781,9 @@ export default function App() {
           >
             <RefreshCw className="w-3.5 h-3.5 text-slate-400 hover:text-blue-600 animate-spin-hover" />
             <span>업데이트 확인</span>
+            <span className="px-1.5 py-0.2 rounded bg-slate-100 text-[10px] text-slate-600 font-mono font-bold border border-slate-200/80">
+              {APP_VERSION}
+            </span>
           </button>
           <button
             type="button"

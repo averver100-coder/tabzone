@@ -16,6 +16,7 @@ export default defineConfig(() => {
   return {
     define: {
       __APP_VERSION__: JSON.stringify(BUILD_VERSION),
+      'import.meta.env.VITE_APP_VERSION': JSON.stringify(BUILD_VERSION),
     },
     plugins: [
       react(),

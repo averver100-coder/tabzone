@@ -5,4 +5,6 @@ declare const __APP_VERSION__: string;
  * 사용자가 버튼을 클릭한 현재 날짜가 아니라, 실제로 코드가 수정 및 빌드되어 배포된 날짜(릴리즈 날짜)를 나타냅니다.
  */
 export const APP_VERSION: string =
-  typeof __APP_VERSION__ !== 'undefined' ? __APP_VERSION__ : 'V2026.10.28';
+  typeof __APP_VERSION__ !== 'undefined' && __APP_VERSION__
+    ? __APP_VERSION__
+    : import.meta.env.VITE_APP_VERSION || 'V2026.10.28';
