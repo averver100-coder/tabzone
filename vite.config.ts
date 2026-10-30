@@ -5,7 +5,8 @@ const kstDate = new Date(now.getTime() + 9 * 60 * 60 * 1000);
 const kstYear = kstDate.getUTCFullYear();
 const kstMonth = String(kstDate.getUTCMonth() + 1).padStart(2, '0');
 const kstDay = String(kstDate.getUTCDate()).padStart(2, '0');
-const BUILD_VERSION = `V${kstYear}.${kstMonth}.${kstDay}`;
+const BUILD_DATE_STR = `${kstYear}.${kstMonth}.${kstDay}`;
+const BUILD_VERSION = `V${BUILD_DATE_STR}`;
 const BUILD_ID = `tabzone-${BUILD_VERSION}`;
 
 import tailwindcss from '@tailwindcss/vite';
@@ -42,6 +43,7 @@ export default defineConfig(() => {
     define: {
       __APP_VERSION__: JSON.stringify(BUILD_VERSION),
       __BUILD_ID__: JSON.stringify(BUILD_ID),
+      'import.meta.env.VITE_APP_BUILD_DATE': JSON.stringify(BUILD_DATE_STR),
       'import.meta.env.VITE_APP_VERSION': JSON.stringify(BUILD_VERSION),
       'import.meta.env.VITE_BUILD_ID': JSON.stringify(BUILD_ID),
     },
