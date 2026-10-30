@@ -352,7 +352,7 @@ export const RentalFormModal: React.FC<RentalFormModalProps> = ({
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-6 bg-black/60 overflow-y-auto"
+      className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-6 bg-black/60 overflow-y-auto transform-gpu"
       onClick={(e) => {
         if (e.target === e.currentTarget && !isSubmitting) {
           onClose();
@@ -724,7 +724,7 @@ export const RentalFormModal: React.FC<RentalFormModalProps> = ({
                   <div className="relative">
                     <input
                       type="text"
-                      list="studentRepSuggestionsList"
+                      
                       placeholder="예: 상미고"
                       value={studentRep}
                       onChange={(e) => {
@@ -753,18 +753,11 @@ export const RentalFormModal: React.FC<RentalFormModalProps> = ({
                     )}
                   </div>
 
-                  {/* Native Datalist for Keyboard Autocomplete */}
-                  <datalist id="studentRepSuggestionsList">
-                    {quickChips.map((chip) => (
-                      <option key={chip.name} value={chip.name}>
-                        {chip.gradeClass ? `${chip.gradeClass} 대표` : ''}
-                      </option>
-                    ))}
-                  </datalist>
+
 
                   {/* Autocomplete Dropdown Popup */}
                   {showSuggestions && filteredSuggestions.length > 0 && (
-                    <div className="absolute left-0 right-0 top-[60px] z-30 bg-white rounded-2xl shadow-xl border border-slate-200 py-1.5 max-h-48 overflow-y-auto animate-in fade-in slide-in-from-top-1">
+                    <div className="absolute left-0 right-0 top-[60px] z-30 bg-white rounded-2xl shadow-xl border border-slate-200 py-1.5 max-h-48 overflow-y-auto">
                       <div className="px-3 py-1 text-[10px] font-bold text-slate-400 uppercase tracking-wider flex items-center justify-between border-b border-slate-100">
                         <span className="flex items-center gap-1">
                           <History className="w-3 h-3 text-blue-500" />
