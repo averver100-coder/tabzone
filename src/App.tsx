@@ -757,20 +757,42 @@ export default function App() {
             onClick={async () => {
               showToast(`🔄 최신 릴리즈(${APP_VERSION}) 업데이트를 확인하는 중입니다...`);
               try {
+                let hasRealUpdate = false;
+                let remoteVersion: string | null = null;
+                try {
+                  const res = await fetch(`/version.json?_t=${Date.now()}`, {
+                    cache: 'no-store',
+                    headers: { 'Cache-Control': 'no-cache, no-store' },
+                  });
+                  if (res.ok) {
+                    const data = await res.json();
+                    if (data?.version && typeof data.version === 'string' && data.version.trim() !== APP_VERSION) {
+                      hasRealUpdate = true;
+                      remoteVersion = data.version.trim();
+                    }
+                  }
+                } catch {}
+
                 if ('serviceWorker' in navigator) {
                   const reg = await navigator.serviceWorker.getRegistration();
                   if (reg) {
                     await reg.update();
-                    if (reg.waiting) {
+                    if (hasRealUpdate && reg.waiting) {
                       reg.waiting.postMessage({ type: 'SKIP_WAITING' });
-                      window.dispatchEvent(new CustomEvent('pwa-show-update-prompt'));
+                      window.dispatchEvent(new CustomEvent('pwa-show-update-prompt', { detail: { force: true } }));
                       return;
                     }
                   }
                 }
+
+                if (hasRealUpdate && remoteVersion) {
+                  window.dispatchEvent(new CustomEvent('pwa-show-update-prompt', { detail: { force: true } }));
+                  return;
+                }
+
                 setTimeout(() => {
                   showToast(`✨ 최신 버전(${APP_VERSION}) 상태입니다. (이미 최신 버전이 적용되어 있습니다)`);
-                }, 600);
+                }, 500);
               } catch (e) {
                 showToast(`✨ 현재 최신 버전(${APP_VERSION})을 사용 중입니다.`);
               }

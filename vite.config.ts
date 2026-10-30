@@ -1,3 +1,4 @@
+import fs from 'fs';
 // Calculate release version at build/compile time in KST (UTC+9)
 const now = new Date();
 const kstDate = new Date(now.getTime() + 9 * 60 * 60 * 1000);
@@ -5,6 +6,7 @@ const kstYear = kstDate.getUTCFullYear();
 const kstMonth = String(kstDate.getUTCMonth() + 1).padStart(2, '0');
 const kstDay = String(kstDate.getUTCDate()).padStart(2, '0');
 const BUILD_VERSION = `V${kstYear}.${kstMonth}.${kstDay}`;
+const BUILD_ID = `tabzone-${BUILD_VERSION}`;
 
 import tailwindcss from '@tailwindcss/vite';
 import react from '@vitejs/plugin-react';
@@ -12,13 +14,39 @@ import path from 'path';
 import {defineConfig} from 'vite';
 import {VitePWA} from 'vite-plugin-pwa';
 
+function versionJsonPlugin() {
+  return {
+    name: 'version-json-sync',
+    buildStart() {
+      try {
+        const root = typeof __dirname !== 'undefined' ? __dirname : process.cwd();
+        const publicDir = path.resolve(root, 'public');
+        if (!fs.existsSync(publicDir)) {
+          fs.mkdirSync(publicDir, { recursive: true });
+        }
+        const vPath = path.resolve(publicDir, 'version.json');
+        fs.writeFileSync(
+          vPath,
+          JSON.stringify({ version: BUILD_VERSION, buildId: BUILD_ID }, null, 2),
+          'utf-8'
+        );
+      } catch (e) {
+        console.debug('Failed to sync version.json:', e);
+      }
+    },
+  };
+}
+
 export default defineConfig(() => {
   return {
     define: {
       __APP_VERSION__: JSON.stringify(BUILD_VERSION),
+      __BUILD_ID__: JSON.stringify(BUILD_ID),
       'import.meta.env.VITE_APP_VERSION': JSON.stringify(BUILD_VERSION),
+      'import.meta.env.VITE_BUILD_ID': JSON.stringify(BUILD_ID),
     },
     plugins: [
+      versionJsonPlugin(),
       react(),
       tailwindcss(),
       VitePWA({
