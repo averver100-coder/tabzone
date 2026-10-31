@@ -755,7 +755,7 @@ export default function App() {
           <button
             type="button"
             onClick={async () => {
-              showToast(`🔄 최신 릴리즈(${APP_VERSION}) 업데이트를 확인하는 중입니다...`);
+              showToast(`업데이트를 확인하는 중입니다... (${APP_VERSION})`);
               try {
                 let hasRealUpdate = false;
                 let remoteVersion: string | null = null;
@@ -779,6 +779,7 @@ export default function App() {
                     await reg.update();
                     if (hasRealUpdate && reg.waiting) {
                       reg.waiting.postMessage({ type: 'SKIP_WAITING' });
+                      showToast(`새로운 업데이트가 있습니다. (${remoteVersion || '신규 버전'})`);
                       window.dispatchEvent(new CustomEvent('pwa-show-update-prompt', { detail: { force: true } }));
                       return;
                     }
@@ -786,15 +787,16 @@ export default function App() {
                 }
 
                 if (hasRealUpdate && remoteVersion) {
+                  showToast(`새로운 업데이트가 있습니다. (${remoteVersion})`);
                   window.dispatchEvent(new CustomEvent('pwa-show-update-prompt', { detail: { force: true } }));
                   return;
                 }
 
                 setTimeout(() => {
-                  showToast(`✨ 최신 버전(${APP_VERSION}) 상태입니다. (이미 최신 버전이 적용되어 있습니다)`);
-                }, 500);
+                  showToast(`최신 버전을 사용 중입니다. (${APP_VERSION})`);
+                }, 300);
               } catch (e) {
-                showToast(`✨ 현재 최신 버전(${APP_VERSION})을 사용 중입니다.`);
+                showToast(`최신 버전을 사용 중입니다. (${APP_VERSION})`);
               }
             }}
             className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md border border-slate-300 hover:border-blue-400 bg-white hover:bg-slate-50 active:scale-95 text-slate-500 hover:text-blue-700 transition cursor-pointer shadow-2xs font-bold text-xs"

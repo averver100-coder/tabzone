@@ -267,8 +267,8 @@ export const PWAUpdatePrompt: React.FC = () => {
                     {isApplying
                       ? '최신 버전 적용 중...'
                       : detectedVersion
-                      ? `새 버전(${detectedVersion})이 배포되었습니다`
-                      : '새로운 업데이트가 있습니다'}
+                      ? `새로운 업데이트가 있습니다. (${detectedVersion})`
+                      : '새로운 업데이트가 있습니다.'}
                   </span>
                   <span className="px-1.5 py-0.2 bg-white/20 text-[10px] font-extrabold rounded text-white border border-white/30">
                     UPDATE
