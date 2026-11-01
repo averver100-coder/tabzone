@@ -20,6 +20,7 @@ import {
   Users,
   X,
 } from 'lucide-react';
+import { AnimatePresence, motion } from 'motion/react';
 import React, { useEffect, useState } from 'react';
 import { Approver, CartType, Rental } from '../types';
 import { ReturnConfirmModal } from './ReturnConfirmModal';
@@ -48,6 +49,19 @@ export const RentalList: React.FC<RentalListProps> = ({
   const [searchQuery, setSearchQuery] = useState('');
   const [returnTargetRental, setReturnTargetRental] = useState<Rental | null>(null);
   const [recentlyReturnedIds, setRecentlyReturnedIds] = useState<Set<string>>(new Set());
+  const [expandedReturnIds, setExpandedReturnIds] = useState<Set<string>>(new Set());
+
+  const toggleReturnDetails = (id: string) => {
+    setExpandedReturnIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) {
+        next.delete(id);
+      } else {
+        next.add(id);
+      }
+      return next;
+    });
+  };
 
   const handleConfirmReturn = async (
     rental: Rental,
@@ -55,6 +69,7 @@ export const RentalList: React.FC<RentalListProps> = ({
   ) => {
     await onReturn(rental, returnData);
     setRecentlyReturnedIds((prev) => new Set(prev).add(rental.id));
+    setExpandedReturnIds((prev) => new Set(prev).add(rental.id));
     setReturnTargetRental(null);
 
     // Auto-remove highlight after 12 seconds
@@ -122,6 +137,17 @@ export const RentalList: React.FC<RentalListProps> = ({
     const h = String(d.getHours()).padStart(2, '0');
     const min = String(d.getMinutes()).padStart(2, '0');
     return `${m}.${day} ${h}:${min}`;
+  };
+
+  const formatFullDateTime = (isoString?: string | null) => {
+    if (!isoString) return '-';
+    const d = new Date(isoString);
+    const y = d.getFullYear();
+    const m = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    const h = String(d.getHours()).padStart(2, '0');
+    const min = String(d.getMinutes()).padStart(2, '0');
+    return `${y}.${m}.${day} ${h}:${min}`;
   };
 
   return (
@@ -341,11 +367,12 @@ export const RentalList: React.FC<RentalListProps> = ({
                 rental.returnNotes!.includes('불량'));
 
             const isRecentlyReturned = recentlyReturnedIds.has(rental.id);
+            const isReturnExpanded = expandedReturnIds.has(rental.id);
 
             return (
               <div
                 key={rental.id}
-                className={`p-2 sm:p-2.5 transition-all duration-300 flex flex-col xl:flex-row xl:items-center justify-between gap-2 ${
+                className={`p-2 sm:p-2.5 transition-all duration-300 flex flex-col gap-2 ${
                   isRecentlyReturned
                     ? 'bg-gradient-to-r from-emerald-100/90 via-emerald-50/90 to-white border-l-4 border-emerald-500 shadow-md ring-2 ring-emerald-400/80 animate-return-success'
                     : isOverdue
@@ -357,152 +384,216 @@ export const RentalList: React.FC<RentalListProps> = ({
                     : 'bg-gradient-to-r from-emerald-50/40 via-teal-50/20 to-white border-l-4 border-emerald-500/90 hover:bg-emerald-50/60 text-slate-800'
                 }`}
               >
-                {/* Main Single-line Content Stream */}
-                <div className="flex items-center gap-2 flex-1 min-w-0">
-                  {/* Cart Avatar with Return Status Badge */}
-                  <div className="relative shrink-0 select-none">
-                    <div
-                      className={`w-7.5 h-7.5 sm:w-8 sm:h-8 rounded-lg flex items-center justify-center font-black text-sm sm:text-base shrink-0 shadow-2xs border ${
-                        isCart1
-                          ? 'bg-blue-50 text-blue-600 border-blue-200'
-                          : 'bg-emerald-50 text-emerald-600 border-emerald-200'
-                      }`}
-                    >
-                      {cartNum}
-                    </div>
-                    {rental.status === '반납 완료' && (
-                      <div className="absolute -bottom-1 -right-1 w-4 h-4 rounded-full bg-emerald-600 text-white flex items-center justify-center ring-1.5 ring-white shadow-2xs">
-                        <Check className="w-2.5 h-2.5 stroke-[3]" />
-                      </div>
-                    )}
-                  </div>
-
-                  {/* Information Row: Fully unified with whitespace-nowrap on all elements */}
-                  <div className="flex flex-wrap items-center gap-x-2.5 gap-y-1.5 min-w-0 flex-1 text-xs sm:text-sm">
-                    {/* Teacher & Class & Cart info */}
-                    <span className="font-bold text-slate-800 text-xs sm:text-sm whitespace-nowrap">
-                      {rental.teacherName ? rental.teacherName.replace(/\s*\(.*\)/, '') : ''} 선생님
-                    </span>
-                    <span className="px-2 py-0.5 rounded-md bg-slate-100 text-slate-800 text-xs font-bold border border-slate-200 whitespace-nowrap">
-                      {rental.gradeClass}
-                    </span>
-                    <span className="px-2 py-0.5 rounded-md bg-blue-50 text-blue-700 text-xs font-bold border border-blue-200 whitespace-nowrap">
-                      {rental.period ? rental.period.replace(/\s*\(.*\)/, '') : ''}
-                    </span>
-                    <span
-                      className={`px-2.5 py-0.5 rounded-md text-xs font-bold border whitespace-nowrap ${
-                        isCart1
-                          ? 'bg-blue-50 text-blue-700 border-blue-200'
-                          : 'bg-emerald-50 text-emerald-700 border-emerald-200'
-                      }`}
-                    >
-                      {cartDisplay} · {rental.quantity}대
-                    </span>
-
-                    {/* Date and Time (Guaranteed non-clipped font-mono) */}
-                    <div className="flex items-center gap-1.5 text-xs font-mono font-bold text-slate-600 shrink-0 whitespace-nowrap">
-                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-slate-100 text-slate-700 border border-slate-200">
-                        <Clock className="w-3.5 h-3.5 text-slate-400 shrink-0" />
-                        <span>대여 {createdFormatted}</span>
-                      </span>
-                      {returnedFormatted && (
-                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-emerald-50 text-emerald-900 border border-emerald-300 font-extrabold shadow-2xs">
-                          <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
-                          <span>반납 {returnedFormatted}</span>
-                        </span>
-                      )}
-                    </div>
-
-                    {/* Approvers & Student Rep */}
-                    <div className="flex items-center gap-1.5 text-xs font-bold shrink-0 whitespace-nowrap">
-                      {rental.studentRep && (
-                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-slate-100 text-slate-600 border border-slate-200">
-                          <User className="w-3 h-3 text-slate-400 shrink-0" />
-                          <span>수령: {rental.studentRep}</span>
-                        </span>
-                      )}
-                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-purple-50 text-purple-800 border border-purple-200">
-                        <ShieldCheck className="w-3 h-3 text-purple-600 shrink-0" />
-                        <span>대여승인: {rental.approver}</span>
-                      </span>
-                      {rental.status === '반납 완료' && (
-                        <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-md bg-emerald-100 text-emerald-950 border border-emerald-300 font-extrabold shadow-2xs">
-                          <RotateCcw className="w-3 h-3 text-emerald-700 shrink-0" />
-                          <span>반납승인: {rental.returnApprover || rental.approver}</span>
-                        </span>
-                      )}
-                    </div>
-
-                    {/* Return Notes Badge if any */}
-                    {hasReturnNotes && (
-                      <span
-                        className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-md text-xs font-bold border whitespace-nowrap ${
-                          isNotesWarning
-                            ? 'bg-amber-100 text-amber-950 border-amber-300'
-                            : 'bg-slate-100 text-slate-800 border-slate-200'
+                <div className="flex flex-col xl:flex-row xl:items-center justify-between gap-2">
+                  {/* Main Single-line Content Stream */}
+                  <div className="flex items-center gap-2 flex-1 min-w-0">
+                    {/* Cart Avatar with Return Status Badge */}
+                    <div className="relative shrink-0 select-none">
+                      <div
+                        className={`w-7.5 h-7.5 sm:w-8 sm:h-8 rounded-lg flex items-center justify-center font-black text-sm sm:text-base shrink-0 shadow-2xs border ${
+                          isCart1
+                            ? 'bg-blue-50 text-blue-600 border-blue-200'
+                            : 'bg-emerald-50 text-emerald-600 border-emerald-200'
                         }`}
                       >
-                        {isNotesWarning ? (
-                          <AlertTriangle className="w-3.5 h-3.5 text-amber-600 shrink-0" />
-                        ) : (
-                          <FileText className="w-3.5 h-3.5 text-slate-500 shrink-0" />
-                        )}
-                        <span>비고: {rental.returnNotes}</span>
+                        {cartNum}
+                      </div>
+                      {rental.status === '반납 완료' && (
+                        <div className="absolute -bottom-1 -right-1 w-4 h-4 rounded-full bg-emerald-600 text-white flex items-center justify-center ring-1.5 ring-white shadow-2xs">
+                          <Check className="w-2.5 h-2.5 stroke-[3]" />
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Information Row: Fully unified with whitespace-nowrap on all elements */}
+                    <div className="flex flex-wrap items-center gap-x-2.5 gap-y-1.5 min-w-0 flex-1 text-xs sm:text-sm">
+                      {/* Teacher & Class & Cart info */}
+                      <span className="font-bold text-slate-800 text-xs sm:text-sm whitespace-nowrap">
+                        {rental.teacherName ? rental.teacherName.replace(/\s*\(.*\)/, '') : ''} 선생님
                       </span>
+                      <span className="px-2 py-0.5 rounded-md bg-slate-100 text-slate-800 text-xs font-bold border border-slate-200 whitespace-nowrap">
+                        {rental.gradeClass}
+                      </span>
+                      <span className="px-2 py-0.5 rounded-md bg-blue-50 text-blue-700 text-xs font-bold border border-blue-200 whitespace-nowrap">
+                        {rental.period ? rental.period.replace(/\s*\(.*\)/, '') : ''}
+                      </span>
+                      <span
+                        className={`px-2.5 py-0.5 rounded-md text-xs font-bold border whitespace-nowrap ${
+                          isCart1
+                            ? 'bg-blue-50 text-blue-700 border-blue-200'
+                            : 'bg-emerald-50 text-emerald-700 border-emerald-200'
+                        }`}
+                      >
+                        {cartDisplay} · {rental.quantity}대
+                      </span>
+
+                      {/* Date and Time (Guaranteed non-clipped font-mono) */}
+                      <div className="flex items-center gap-1.5 text-xs font-mono font-bold text-slate-600 shrink-0 whitespace-nowrap">
+                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-slate-100 text-slate-700 border border-slate-200">
+                          <Clock className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+                          <span>대여 {createdFormatted}</span>
+                        </span>
+                        {rental.status === '반납 완료' && returnedFormatted && (
+                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-emerald-50/90 text-emerald-800 border border-emerald-200 font-bold shadow-2xs">
+                            <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+                            <span>반납완료 · {returnedFormatted}</span>
+                          </span>
+                        )}
+                      </div>
+
+                      {/* Approvers & Student Rep */}
+                      <div className="flex items-center gap-1.5 text-xs font-bold shrink-0 whitespace-nowrap">
+                        {rental.studentRep && (
+                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-slate-100 text-slate-600 border border-slate-200">
+                            <User className="w-3 h-3 text-slate-400 shrink-0" />
+                            <span>수령: {rental.studentRep}</span>
+                          </span>
+                        )}
+                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-purple-50 text-purple-800 border border-purple-200">
+                          <ShieldCheck className="w-3 h-3 text-purple-600 shrink-0" />
+                          <span>대여승인: {rental.approver}</span>
+                        </span>
+                      </div>
+
+                      {/* Return Notes Badge if any */}
+                      {hasReturnNotes && (
+                        <span
+                          className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-md text-xs font-bold border whitespace-nowrap ${
+                            isNotesWarning
+                              ? 'bg-amber-100 text-amber-950 border-amber-300'
+                              : 'bg-slate-100 text-slate-800 border-slate-200'
+                          }`}
+                        >
+                          {isNotesWarning ? (
+                            <AlertTriangle className="w-3.5 h-3.5 text-amber-600 shrink-0" />
+                          ) : (
+                            <FileText className="w-3.5 h-3.5 text-slate-500 shrink-0" />
+                          )}
+                          <span>비고: {rental.returnNotes}</span>
+                        </span>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Right: Status Pill & Action Button */}
+                  <div className="flex items-center justify-end gap-2 shrink-0 pt-1.5 xl:pt-0 border-t xl:border-t-0 border-slate-100 whitespace-nowrap">
+                    {rental.status === '대여 중' ? (
+                      <>
+                        {isOverdue && (
+                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-rose-600 text-white text-[11px] font-black shadow-2xs animate-pulse">
+                            <AlertTriangle className="w-3 h-3 shrink-0" />
+                            <span>마감시간 초과</span>
+                          </span>
+                        )}
+                        <span className="px-2.5 py-0.5 rounded-full bg-amber-100 text-amber-900 text-xs font-bold border border-amber-300 shadow-2xs">
+                          대여 중 ({rental.quantity}대)
+                        </span>
+                        <button
+                          type="button"
+                          disabled={returningId === rental.id}
+                          onClick={() => setReturnTargetRental(rental)}
+                          className="h-8.5 sm:h-9 px-3.5 sm:px-4 rounded-xl bg-emerald-600 hover:bg-emerald-500 active:scale-95 disabled:bg-slate-300 text-white text-xs font-bold shadow-xs shadow-emerald-600/20 flex items-center gap-1.5 transition cursor-pointer"
+                        >
+                          {returningId === rental.id ? (
+                            <>
+                              <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                              <span>반납 중...</span>
+                            </>
+                          ) : (
+                            <>
+                              <RotateCcw className="w-3.5 h-3.5 stroke-[2.5]" />
+                              <span>반납 확인</span>
+                            </>
+                          )}
+                        </button>
+                      </>
+                    ) : (
+                      <>
+                        <button
+                          type="button"
+                          onClick={() => toggleReturnDetails(rental.id)}
+                          aria-expanded={isReturnExpanded}
+                          className={`h-8 px-2.5 rounded-lg border text-xs font-bold flex items-center gap-1.5 transition-all active:scale-95 cursor-pointer select-none ${
+                            isReturnExpanded
+                              ? 'bg-emerald-100/90 text-emerald-900 border-emerald-400 ring-1 ring-emerald-200 shadow-2xs'
+                              : 'bg-emerald-50/60 hover:bg-emerald-100/70 text-emerald-800 border-emerald-200/90 shadow-2xs'
+                          }`}
+                        >
+                          <CheckCircle className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+                          <span>반납 상세 정보</span>
+                          <ChevronDown
+                            className={`w-3.5 h-3.5 text-emerald-700 transition-transform duration-300 ${
+                              isReturnExpanded ? 'rotate-180' : ''
+                            }`}
+                          />
+                        </button>
+                        <span
+                          className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-extrabold transition-all duration-300 ${
+                            isRecentlyReturned
+                              ? 'bg-emerald-100 text-emerald-900 border border-emerald-400 ring-2 ring-emerald-300/70 shadow-sm scale-105'
+                              : 'bg-emerald-50 text-emerald-800 border border-emerald-200 shadow-2xs'
+                          }`}
+                        >
+                          <span className="w-4 h-4 rounded-full bg-emerald-600 text-white flex items-center justify-center shrink-0">
+                            <Check className="w-2.5 h-2.5 stroke-[3]" />
+                          </span>
+                          <span>반납 완료</span>
+                          {isRecentlyReturned && (
+                            <span className="ml-0.5 px-1.5 py-0.2 rounded-full bg-emerald-600 text-[10px] font-black text-white">
+                              방금 반납됨
+                            </span>
+                          )}
+                        </span>
+                      </>
                     )}
                   </div>
                 </div>
 
-                {/* Right: Status Pill & Action Button */}
-                <div className="flex items-center justify-end gap-2 shrink-0 pt-1.5 xl:pt-0 border-t xl:border-t-0 border-slate-100 whitespace-nowrap">
-                  {rental.status === '대여 중' ? (
-                    <>
-                      {isOverdue && (
-                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-rose-600 text-white text-[11px] font-black shadow-2xs animate-pulse">
-                          <AlertTriangle className="w-3 h-3 shrink-0" />
-                          <span>마감시간 초과</span>
-                        </span>
-                      )}
-                      <span className="px-2.5 py-0.5 rounded-full bg-amber-100 text-amber-900 text-xs font-bold border border-amber-300 shadow-2xs">
-                        대여 중 ({rental.quantity}대)
-                      </span>
-                      <button
-                        type="button"
-                        disabled={returningId === rental.id}
-                        onClick={() => setReturnTargetRental(rental)}
-                        className="h-8.5 sm:h-9 px-3.5 sm:px-4 rounded-xl bg-emerald-600 hover:bg-emerald-500 active:scale-95 disabled:bg-slate-300 text-white text-xs font-bold shadow-xs shadow-emerald-600/20 flex items-center gap-1.5 transition cursor-pointer"
-                      >
-                        {returningId === rental.id ? (
+                {/* Expandable Return Details Accordion Panel with Smooth Height Animation */}
+                <AnimatePresence initial={false}>
+                  {rental.status === '반납 완료' && isReturnExpanded && (
+                    <motion.div
+                      key={`return-details-${rental.id}`}
+                      initial={{ height: 0, opacity: 0 }}
+                      animate={{ height: 'auto', opacity: 1 }}
+                      exit={{ height: 0, opacity: 0 }}
+                      transition={{ duration: 0.25, ease: [0.22, 1, 0.36, 1] }}
+                      className="overflow-hidden"
+                    >
+                      <div className="mt-1 ml-0 sm:ml-10 px-3.5 py-2.5 rounded-xl bg-emerald-50/75 border border-emerald-200/90 flex flex-wrap items-center gap-x-4 gap-y-1.5 text-xs text-emerald-950 shadow-2xs">
+                        <div className="flex items-center gap-1.5 font-bold">
+                          <span className="w-5 h-5 rounded-md bg-emerald-100 border border-emerald-200 flex items-center justify-center shrink-0">
+                            <Clock className="w-3 h-3 text-emerald-700" />
+                          </span>
+                          <span className="text-emerald-700">반납 시간:</span>
+                          <span className="font-mono font-extrabold text-emerald-950 bg-white px-2 py-0.5 rounded-md border border-emerald-200/80">
+                            {formatFullDateTime(rental.returnedAt)}
+                          </span>
+                        </div>
+                        <span className="text-emerald-300 hidden sm:inline">|</span>
+                        <div className="flex items-center gap-1.5 font-bold">
+                          <span className="w-5 h-5 rounded-md bg-emerald-100 border border-emerald-200 flex items-center justify-center shrink-0">
+                            <ShieldCheck className="w-3 h-3 text-emerald-700" />
+                          </span>
+                          <span className="text-emerald-700">반납 승인자:</span>
+                          <span className="px-2 py-0.5 rounded-md bg-white border border-emerald-200 font-extrabold text-emerald-900">
+                            {rental.returnApprover || rental.approver}
+                          </span>
+                        </div>
+                        {hasReturnNotes && (
                           <>
-                            <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                            <span>반납 중...</span>
-                          </>
-                        ) : (
-                          <>
-                            <RotateCcw className="w-3.5 h-3.5 stroke-[2.5]" />
-                            <span>반납 확인</span>
+                            <span className="text-emerald-300 hidden sm:inline">|</span>
+                            <div className="flex items-center gap-1.5 font-bold">
+                              <FileText className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+                              <span className="text-emerald-700">특이사항:</span>
+                              <span className="text-slate-800">{rental.returnNotes}</span>
+                            </div>
                           </>
                         )}
-                      </button>
-                    </>
-                  ) : (
-                    <span
-                      className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-black shadow-xs transition-all duration-300 ${
-                        isRecentlyReturned
-                          ? 'bg-gradient-to-r from-emerald-500 via-teal-500 to-emerald-600 text-white shadow-emerald-500/40 border border-emerald-300 ring-2 ring-emerald-300 scale-105 animate-pulse'
-                          : 'bg-gradient-to-r from-emerald-600 to-teal-700 text-white shadow-emerald-700/25 border border-emerald-400/40'
-                      }`}
-                    >
-                      <CheckCircle2 className="w-3.5 h-3.5 text-white shrink-0" />
-                      <span>반납 완료</span>
-                      {isRecentlyReturned && (
-                        <span className="ml-0.5 px-1.5 py-0.2 rounded-full bg-white/25 text-[10px] font-black text-white">
-                          방금 반납됨
-                        </span>
-                      )}
-                    </span>
+                      </div>
+                    </motion.div>
                   )}
-                </div>
+                </AnimatePresence>
               </div>
             );
           })
