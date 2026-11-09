@@ -748,9 +748,19 @@ export const RentalFormModal: React.FC<RentalFormModalProps> = ({
   }, [isOpen, onClose, isSubmitting]);
 
   const uniqueTeachers = useMemo(() => {
-    return Array.from(
+    const deduplicated = Array.from(
       new Map(teachers.map((t) => [`${t.name?.trim()}__${t.subject?.trim()}`, t])).values()
     );
+    return deduplicated.sort((a, b) => {
+      const aName = (a.name || '').trim();
+      const bName = (b.name || '').trim();
+      const aIsUnregistered = aName.includes('미등록');
+      const bIsUnregistered = bName.includes('미등록');
+
+      if (aIsUnregistered && !bIsUnregistered) return 1;
+      if (!aIsUnregistered && bIsUnregistered) return -1;
+      return aName.localeCompare(bName, 'ko');
+    });
   }, [teachers]);
 
   const uniqueApprovers = useMemo(() => {

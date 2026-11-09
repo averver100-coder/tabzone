@@ -60,15 +60,19 @@ import {
 import {
   calculateCartCapacities,
   createRental,
+  deleteRentalRecord,
   getRecommendedCart,
+  RentalUpdateInput,
   returnRental,
   subscribeToRentals,
+  updateRentalRecord,
 } from './services/rentalService';
 import {
   DEFAULT_OPERATING_HOURS,
 } from './services/settingsService';
 import {
   addTeacher,
+  compareTeachers,
   removeTeacher,
   subscribeToTeachers,
 } from './services/teacherService';
@@ -567,6 +571,33 @@ export default function App() {
     }
   };
 
+  // Admin & Superadmin: Update rental or return details in Master Management
+  const handleUpdateRental = async (
+    originalRental: Rental,
+    updates: RentalUpdateInput
+  ) => {
+    const operator = currentUser
+      ? { uid: currentUser.uid, email: currentUser.email }
+      : { uid: 'superadmin-sso', email: SUPER_ADMIN_EMAIL };
+
+    const updated = await updateRentalRecord(operator, originalRental, updates);
+    setRentals((prev) => prev.map((r) => (r.id === originalRental.id ? updated : r)));
+    showToast(
+      `✏️ [${updated.teacherName} / ${updated.gradeClass}] 대여·반납 정보가 수정되었습니다.`
+    );
+  };
+
+  // Admin & Superadmin: Delete rental record in Master Management
+  const handleDeleteRental = async (rental: Rental) => {
+    const operator = currentUser
+      ? { uid: currentUser.uid, email: currentUser.email }
+      : { uid: 'superadmin-sso', email: SUPER_ADMIN_EMAIL };
+
+    await deleteRentalRecord(operator, rental);
+    setRentals((prev) => prev.filter((r) => r.id !== rental.id));
+    showToast(`🗑️ [${rental.teacherName} / ${rental.gradeClass}] 대여 기록이 삭제되었습니다.`);
+  };
+
   // Whitelist management handlers (Superadmin only)
   const handleAddWhitelist = async (newUser: {
     email: string;
@@ -615,7 +646,7 @@ export default function App() {
         return prev;
       }
       const updated = [...prev, createdTeacher];
-      return updated.sort((a, b) => a.name.localeCompare(b.name, 'ko'));
+      return updated.sort(compareTeachers);
     });
     showToast(`담당 교사 [${newTeacher.name}] 선생님이 등록되었습니다.`);
   };
@@ -856,6 +887,10 @@ export default function App() {
       <WhitelistModal
         isOpen={isWhitelistModalOpen}
         onClose={() => setIsWhitelistModalOpen(false)}
+        currentUser={currentUser}
+        rentals={rentals}
+        onUpdateRental={handleUpdateRental}
+        onDeleteRental={handleDeleteRental}
         whitelistUsers={whitelistUsers}
         onAddUser={handleAddWhitelist}
         onRemoveUser={handleRemoveWhitelist}

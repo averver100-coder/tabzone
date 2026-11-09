@@ -56,6 +56,16 @@
           "type": "string",
           "description": "반납 처리 일시 (ISO 형식)"
         },
+        "returnApprover": {
+          "type": "string",
+          "description": "반납 승인 교직원",
+          "maxLength": 50
+        },
+        "returnNotes": {
+          "type": "string",
+          "description": "반납 확인 비고 및 특이사항 메모",
+          "maxLength": 200
+        },
         "createdByEmail": {
           "type": "string",
           "description": "등록자 계정 이메일"

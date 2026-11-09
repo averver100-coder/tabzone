@@ -14,18 +14,31 @@ const TEACHERS_COLLECTION = 'teachers';
 const LOCAL_STORAGE_TEACHERS_KEY = 'tabzone_teachers_cache';
 const INITIALIZED_FLAG_KEY = 'tabzone_teachers_seeded_v1';
 
+export function compareTeachers(a: Teacher, b: Teacher): number {
+  const aName = (a.name || '').trim();
+  const bName = (b.name || '').trim();
+  const aIsUnregistered = aName.includes('미등록');
+  const bIsUnregistered = bName.includes('미등록');
+
+  if (aIsUnregistered && !bIsUnregistered) return 1;
+  if (!aIsUnregistered && bIsUnregistered) return -1;
+  return aName.localeCompare(bName, 'ko');
+}
+
 function getLocalTeachers(): Teacher[] {
   try {
     const raw = localStorage.getItem(LOCAL_STORAGE_TEACHERS_KEY);
     if (raw !== null) {
       const parsed: Teacher[] = JSON.parse(raw);
       const seen = new Set<string>();
-      return parsed.filter((t) => {
-        const key = `${t.name?.trim()}__${t.subject?.trim()}`;
-        if (seen.has(key)) return false;
-        seen.add(key);
-        return true;
-      });
+      return parsed
+        .filter((t) => {
+          const key = `${t.name?.trim()}__${t.subject?.trim()}`;
+          if (seen.has(key)) return false;
+          seen.add(key);
+          return true;
+        })
+        .sort(compareTeachers);
     }
   } catch (e) {
     // Ignore error
@@ -71,7 +84,7 @@ export function subscribeToTeachers(
           }
         }
 
-        uniqueTeachers.sort((a, b) => a.name.localeCompare(b.name, 'ko'));
+        uniqueTeachers.sort(compareTeachers);
         saveLocalTeachers(uniqueTeachers);
         callback(uniqueTeachers);
       },
@@ -105,7 +118,7 @@ export async function addTeacher(
     (t) => !(t.name.trim() === data.name.trim() && t.subject.trim() === data.subject.trim())
   );
   current.push(data);
-  current.sort((a, b) => a.name.localeCompare(b.name, 'ko'));
+  current.sort(compareTeachers);
   saveLocalTeachers(current);
 
   try {

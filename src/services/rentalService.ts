@@ -1,5 +1,6 @@
 import {
   collection,
+  deleteDoc,
   doc,
   limit,
   onSnapshot,
@@ -9,7 +10,7 @@ import {
   updateDoc,
 } from 'firebase/firestore';
 import { db } from '../lib/firebase';
-import { CartCapacity, CartType, Rental } from '../types';
+import { CartCapacity, CartType, Rental, RentalStatus } from '../types';
 import { createAuditLog } from './auditService';
 
 export const CART_CAPACITY = 30; // 30 tablets each for A and B cart (Total 60)
@@ -278,3 +279,147 @@ export async function returnRental(
     }, 처리자: ${operator.email}`
   );
 }
+
+export interface RentalUpdateInput {
+  period: string;
+  gradeClass: string;
+  teacherName: string;
+  studentRep: string;
+  cartUsed: CartType;
+  quantity: number;
+  approver: string;
+  status: RentalStatus;
+  returnedAt?: string | null;
+  returnApprover?: string | null;
+  returnNotes?: string | null;
+}
+
+/**
+ * Update rental and/or return details by Admin / Superadmin
+ */
+export async function updateRentalRecord(
+  operator: { uid: string; email: string },
+  originalRental: Rental,
+  updates: RentalUpdateInput
+): Promise<Rental> {
+  const docRef = doc(db, RENTALS_COLLECTION, originalRental.id);
+
+  const isReturned = updates.status === '반납 완료';
+  const resolvedReturnedAt = isReturned
+    ? updates.returnedAt || originalRental.returnedAt || new Date().toISOString()
+    : null;
+  const resolvedReturnApprover = isReturned
+    ? (updates.returnApprover || originalRental.returnApprover || updates.approver || '').trim()
+    : null;
+  const resolvedReturnNotes = isReturned
+    ? (updates.returnNotes || '').trim() || null
+    : null;
+
+  const updatedRental: Rental = {
+    ...originalRental,
+    period: updates.period.trim(),
+    gradeClass: updates.gradeClass.trim(),
+    teacherName: updates.teacherName.trim(),
+    studentRep: updates.studentRep.trim(),
+    cartUsed: updates.cartUsed,
+    quantity: Math.min(30, Math.max(1, Number(updates.quantity) || originalRental.quantity || 20)),
+    approver: updates.approver.trim(),
+    status: updates.status,
+    returnedAt: resolvedReturnedAt,
+    returnApprover: resolvedReturnApprover,
+    returnNotes: resolvedReturnNotes,
+    updatedByEmail: operator.email,
+  };
+
+  // Update local storage cache and notify subscribers immediately
+  const localList = getLocalRentals().map((r) =>
+    r.id === originalRental.id ? updatedRental : r
+  );
+  notifyAllRentals(localList);
+
+  try {
+    await setDoc(docRef, updatedRental, { merge: true });
+  } catch (error) {
+    console.warn('Firestore updateRentalRecord notice, updated locally:', error);
+  }
+
+  // Build human-readable diff for audit log
+  const changes: string[] = [];
+  if (originalRental.teacherName !== updatedRental.teacherName) {
+    changes.push(`담당교사: ${originalRental.teacherName} → ${updatedRental.teacherName}`);
+  }
+  if (originalRental.gradeClass !== updatedRental.gradeClass) {
+    changes.push(`학년반: ${originalRental.gradeClass} → ${updatedRental.gradeClass}`);
+  }
+  if (originalRental.period !== updatedRental.period) {
+    changes.push(`교시: ${originalRental.period} → ${updatedRental.period}`);
+  }
+  if (originalRental.studentRep !== updatedRental.studentRep) {
+    changes.push(`수령자: ${originalRental.studentRep} → ${updatedRental.studentRep}`);
+  }
+  if (originalRental.approver !== updatedRental.approver) {
+    changes.push(`대여승인자: ${originalRental.approver} → ${updatedRental.approver}`);
+  }
+  if (originalRental.cartUsed !== updatedRental.cartUsed) {
+    changes.push(`보관함: ${originalRental.cartUsed} → ${updatedRental.cartUsed}`);
+  }
+  if (originalRental.quantity !== updatedRental.quantity) {
+    changes.push(`수량: ${originalRental.quantity}대 → ${updatedRental.quantity}대`);
+  }
+  if (originalRental.status !== updatedRental.status) {
+    changes.push(`상태: ${originalRental.status} → ${updatedRental.status}`);
+  }
+  if ((originalRental.returnApprover || '') !== (updatedRental.returnApprover || '')) {
+    changes.push(`반납승인자: ${originalRental.returnApprover || '-'} → ${updatedRental.returnApprover || '-'}`);
+  }
+  if ((originalRental.returnNotes || '') !== (updatedRental.returnNotes || '')) {
+    changes.push(`반납비고: ${originalRental.returnNotes || '-'} → ${updatedRental.returnNotes || '-'}`);
+  }
+  if (
+    isReturned &&
+    originalRental.returnedAt !== updatedRental.returnedAt &&
+    updatedRental.returnedAt
+  ) {
+    changes.push(
+      `반납시각: ${new Date(updatedRental.returnedAt).toLocaleString('ko-KR')}`
+    );
+  }
+
+  const changeDetails = changes.length > 0 ? changes.join(', ') : '기존 정보 재저장';
+
+  await createAuditLog(
+    operator,
+    '대여/반납 수정',
+    `${updatedRental.teacherName} 선생님 (${updatedRental.gradeClass}) 대여·반납 내역 수정`,
+    `변경내역: [${changeDetails}], 수정자: ${operator.email}`
+  );
+
+  return updatedRental;
+}
+
+/**
+ * Delete a rental record by Admin / Superadmin
+ */
+export async function deleteRentalRecord(
+  operator: { uid: string; email: string },
+  rental: Rental
+): Promise<void> {
+  const docRef = doc(db, RENTALS_COLLECTION, rental.id);
+
+  const localList = getLocalRentals().filter((r) => r.id !== rental.id);
+  notifyAllRentals(localList);
+
+  try {
+    await deleteDoc(docRef);
+  } catch (error) {
+    console.warn('Firestore deleteRentalRecord notice, removed locally:', error);
+  }
+
+  await createAuditLog(
+    operator,
+    '대여 기록 삭제',
+    `${rental.teacherName} 선생님 (${rental.gradeClass}) ${rental.cartUsed} ${rental.quantity}대 기록 삭제`,
+    `교시: ${rental.period}, 수령자: ${rental.studentRep}, 상태: ${rental.status}, 삭제자: ${operator.email}`
+  );
+}
+

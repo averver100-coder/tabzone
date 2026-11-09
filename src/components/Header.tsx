@@ -164,31 +164,30 @@ export const Header: React.FC<HeaderProps> = ({
 
           {currentUser ? (
             <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
-              {/* Superadmin Menu Button */}
-              {currentUser.role === 'superadmin' && (
-                <>
-                  <button
-                    type="button"
-                    onClick={onOpenWhitelist}
-                    className="flex items-center gap-1.5 sm:gap-2 h-11 sm:h-12 px-3 sm:px-3.5 rounded-2xl bg-purple-50 hover:bg-purple-100 active:scale-95 text-purple-700 text-xs sm:text-sm font-bold border border-purple-200 transition cursor-pointer shadow-xs shrink-0 whitespace-nowrap"
-                    title="화이트리스트 / 대여 승인자 / 담당 교사 관리"
-                  >
-                    <KeyRound className="w-4 h-4 shrink-0" />
-                    <span className="whitespace-nowrap">마스터관리</span>
-                  </button>
+              {/* Master Management Menu Button (Admins & Superadmin) */}
+              {(currentUser.role === 'admin' || currentUser.role === 'superadmin') && (
+                <button
+                  type="button"
+                  onClick={onOpenWhitelist}
+                  className="flex items-center gap-1.5 sm:gap-2 h-11 sm:h-12 px-3 sm:px-3.5 rounded-2xl bg-purple-50 hover:bg-purple-100 active:scale-95 text-purple-700 text-xs sm:text-sm font-bold border border-purple-200 transition cursor-pointer shadow-xs shrink-0 whitespace-nowrap"
+                  title="대여·반납 내역 수정 / 대여 승인자 / 담당 교사 / 화이트리스트 관리"
+                >
+                  <KeyRound className="w-4 h-4 shrink-0" />
+                  <span className="whitespace-nowrap">마스터관리</span>
+                </button>
+              )}
 
-                  {onOpenAnalytics && (
-                    <button
-                      type="button"
-                      onClick={onOpenAnalytics}
-                      className="flex items-center gap-1.5 sm:gap-2 h-11 sm:h-12 px-3 sm:px-3.5 rounded-2xl bg-indigo-50 hover:bg-indigo-100 active:scale-95 text-indigo-700 text-xs sm:text-sm font-bold border border-indigo-200 transition cursor-pointer shadow-xs shrink-0 whitespace-nowrap"
-                      title="요일별·시간대별 대여 빈도 통계 및 엑셀 데이터 추출 (슈퍼관리자 전용)"
-                    >
-                      <BarChart3 className="w-4 h-4 shrink-0 text-indigo-600" />
-                      <span className="whitespace-nowrap">대여분석</span>
-                    </button>
-                  )}
-                </>
+              {/* Superadmin Analytics Button */}
+              {currentUser.role === 'superadmin' && onOpenAnalytics && (
+                <button
+                  type="button"
+                  onClick={onOpenAnalytics}
+                  className="flex items-center gap-1.5 sm:gap-2 h-11 sm:h-12 px-3 sm:px-3.5 rounded-2xl bg-indigo-50 hover:bg-indigo-100 active:scale-95 text-indigo-700 text-xs sm:text-sm font-bold border border-indigo-200 transition cursor-pointer shadow-xs shrink-0 whitespace-nowrap"
+                  title="요일별·시간대별 대여 빈도 통계 및 엑셀 데이터 추출 (슈퍼관리자 전용)"
+                >
+                  <BarChart3 className="w-4 h-4 shrink-0 text-indigo-600" />
+                  <span className="whitespace-nowrap">대여분석</span>
+                </button>
               )}
 
               {/* Audit Log Button (Admins & Superadmin) */}
