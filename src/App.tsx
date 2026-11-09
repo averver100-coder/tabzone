@@ -91,7 +91,37 @@ import {
   WhitelistUser,
 } from './types';
 
+function isAllowedAccessEnvironment(): boolean {
+  // 1. Vite 개발 환경(import.meta.env.DEV)일 경우 도메인 검사 건너뜀
+  if (import.meta.env.DEV || import.meta.env.MODE === 'development') {
+    return true;
+  }
+
+  if (typeof window === 'undefined') {
+    return true;
+  }
+
+  const hostname = window.location.hostname.toLowerCase();
+
+  // 2. localhost 또는 127.0.0.1인 경우 무조건 렌더링 허용
+  if (hostname === 'localhost' || hostname === '127.0.0.1') {
+    return true;
+  }
+
+  // 3. 운영 환경(Production)에서는 .srider.kr로 끝나는 호스트네임만 허용
+  return hostname.endsWith('.srider.kr');
+}
+
 export default function App() {
+  // 실제 운영 환경(Production)이면서 .srider.kr로 끝나지 않는 우회 도메인 접속 시 차단
+  if (!isAllowedAccessEnvironment()) {
+    return null;
+  }
+
+  return <AppContent />;
+}
+
+function AppContent() {
   // Auth & User State
   const [currentUser, setCurrentUser] = useState<AuthUser | null>(null);
   const [isAuthLoading, setIsAuthLoading] = useState(true);

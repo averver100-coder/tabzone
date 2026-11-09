@@ -100,8 +100,45 @@ export default defineConfig(() => {
           maximumFileSizeToCacheInBytes: 6 * 1024 * 1024,
           cleanupOutdatedCaches: true,
           clientsClaim: true,
-          skipWaiting: false,
-          globPatterns: ['**/*.{js,css,html,ico,png,svg,woff,woff2}'],
+          skipWaiting: true,
+          navigateFallback: null,
+          globPatterns: [],
+          importScripts: ['/sw-waf-guard.js'],
+          runtimeCaching: [
+            {
+              urlPattern: ({ request }) => request.mode === 'navigate',
+              handler: 'NetworkFirst',
+              options: {
+                cacheName: 'tabzone-pages-network-first',
+                networkTimeoutSeconds: 5,
+                cacheableResponse: {
+                  statuses: [200],
+                },
+              },
+            },
+            {
+              urlPattern: ({ url }) => url.origin === self.location.origin,
+              handler: 'NetworkFirst',
+              options: {
+                cacheName: 'tabzone-assets-network-first',
+                networkTimeoutSeconds: 5,
+                cacheableResponse: {
+                  statuses: [200],
+                },
+              },
+            },
+            {
+              urlPattern: /^https:\/\/fonts\.(?:googleapis|gstatic)\.com\/.*/i,
+              handler: 'NetworkFirst',
+              options: {
+                cacheName: 'google-fonts-network-first',
+                networkTimeoutSeconds: 5,
+                cacheableResponse: {
+                  statuses: [200],
+                },
+              },
+            },
+          ],
         },
         devOptions: {
           enabled: true,
