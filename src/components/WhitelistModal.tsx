@@ -69,9 +69,10 @@ const TIMETABLE_PERIODS = [
 ];
 
 const GRADE_CLASS_MAPPING: Record<string, string[]> = {
-  '1학년': Array.from({ length: 10 }, (_, i) => `${i + 1}반`),
-  '2학년': Array.from({ length: 9 }, (_, i) => `${i + 1}반`),
-  '3학년': Array.from({ length: 11 }, (_, i) => `${i + 1}반`),
+  '1학년': [...Array.from({ length: 10 }, (_, i) => `${i + 1}반`), '동아리'],
+  '2학년': [...Array.from({ length: 9 }, (_, i) => `${i + 1}반`), '동아리'],
+  '3학년': [...Array.from({ length: 11 }, (_, i) => `${i + 1}반`), '동아리'],
+  '동아리': ['동아리'],
 };
 
 function toLocalDateTimeInputValue(isoString?: string | null): string {

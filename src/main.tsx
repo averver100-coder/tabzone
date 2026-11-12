@@ -11,27 +11,39 @@ type AccessState = 'checking' | 'granted' | 'denied';
  * - Cloudflare WAF에 의해 차단(403 등)되거나 오프라인/네트워크 오류 발생 시,
  *   저장된 캐시 화면을 절대 렌더링하지 않고 "네트워크 접근이 거부되었습니다" 텍스트만 표시합니다.
  */
-function checkAllowedHostOrDev(): boolean {
+function isDevOrLocalHost(): boolean {
   if (import.meta.env.DEV || import.meta.env.MODE === 'development') {
     return true;
   }
   if (typeof window === 'undefined') {
+    return false;
+  }
+  const hostname = window.location.hostname.toLowerCase();
+  return hostname === 'localhost' || hostname === '127.0.0.1';
+}
+
+function checkAllowedHostOrDev(): boolean {
+  if (isDevOrLocalHost()) {
     return true;
   }
   const hostname = window.location.hostname.toLowerCase();
-  if (hostname === 'localhost' || hostname === '127.0.0.1') {
-    return true;
-  }
   return hostname.endsWith('.srider.kr');
 }
 
 function NetworkFirstGate() {
   const isAllowedHost = checkAllowedHostOrDev();
+  const isDevLocal = isDevOrLocalHost();
 
-  const [accessState, setAccessState] = useState<AccessState>('checking');
+  const [accessState, setAccessState] = useState<AccessState>(isDevLocal ? 'granted' : 'checking');
 
   useEffect(() => {
+    if (isDevLocal) {
+      setAccessState('granted');
+      return;
+    }
+
     if (!isAllowedHost) {
+      setAccessState('denied');
       return;
     }
 

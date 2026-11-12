@@ -89,9 +89,10 @@ const TIMETABLE_PERIODS = [
 // Grade & Class specifications:
 // 1학년: 10반, 2학년: 9반, 3학년: 11반
 const GRADE_CLASS_MAPPING: Record<string, string[]> = {
-  '1학년': Array.from({ length: 10 }, (_, i) => `${i + 1}반`),
-  '2학년': Array.from({ length: 9 }, (_, i) => `${i + 1}반`),
-  '3학년': Array.from({ length: 11 }, (_, i) => `${i + 1}반`),
+  '1학년': [...Array.from({ length: 10 }, (_, i) => `${i + 1}반`), '동아리'],
+  '2학년': [...Array.from({ length: 9 }, (_, i) => `${i + 1}반`), '동아리'],
+  '3학년': [...Array.from({ length: 11 }, (_, i) => `${i + 1}반`), '동아리'],
+  '동아리': ['동아리'],
 };
 
 // Preset quantities: 10대, 15대, 20대, 25대, 30대
@@ -414,6 +415,7 @@ const GradeClassSection = React.memo<GradeClassSectionProps>(({
           <option value="1학년">1학년</option>
           <option value="2학년">2학년</option>
           <option value="3학년">3학년</option>
+          <option value="동아리">동아리</option>
         </select>
       </div>
 
