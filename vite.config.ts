@@ -1,21 +1,92 @@
 import fs from 'fs';
-// Calculate release version at build/compile time in KST (UTC+9)
-const now = new Date();
-const kstDate = new Date(now.getTime() + 9 * 60 * 60 * 1000);
-const kstYear = kstDate.getUTCFullYear();
-const kstMonth = String(kstDate.getUTCMonth() + 1).padStart(2, '0');
-const kstDay = String(kstDate.getUTCDate()).padStart(2, '0');
-const BUILD_DATE_STR = `${kstYear}.${kstMonth}.${kstDay}`;
-const BUILD_VERSION = `V${BUILD_DATE_STR}`;
-const BUILD_ID = `tabzone-${BUILD_VERSION}`;
-
 import tailwindcss from '@tailwindcss/vite';
 import react from '@vitejs/plugin-react';
 import path from 'path';
 import {defineConfig} from 'vite';
 import {VitePWA} from 'vite-plugin-pwa';
 
-function versionJsonPlugin() {
+interface VersionInfo {
+  buildDate: string;
+  patchNum: number;
+  patchStr: string;
+  version: string;
+  buildId: string;
+}
+
+function getKstDateString(): string {
+  const now = new Date();
+  const kstDate = new Date(now.getTime() + 9 * 60 * 60 * 1000);
+  const kstYear = kstDate.getUTCFullYear();
+  const kstMonth = String(kstDate.getUTCMonth() + 1).padStart(2, '0');
+  const kstDay = String(kstDate.getUTCDate()).padStart(2, '0');
+  return `${kstYear}.${kstMonth}.${kstDay}`;
+}
+
+function parseStoredVersion(rawVersion?: string | null): { date: string; patch: number; hasPatch: boolean } | null {
+  if (!rawVersion || typeof rawVersion !== 'string') return null;
+  const match = rawVersion.trim().match(/^V?(\d{4}\.\d{2}\.\d{2})(?:\.(\d+))?$/);
+  if (!match) return null;
+  return {
+    date: match[1],
+    patch: match[2] ? parseInt(match[2], 10) : 0,
+    hasPatch: Boolean(match[2]),
+  };
+}
+
+let cachedBuildVersionInfo: VersionInfo | null = null;
+
+function resolveVersionInfo(command: 'build' | 'serve'): VersionInfo {
+  if (cachedBuildVersionInfo) {
+    return cachedBuildVersionInfo;
+  }
+
+  const root = typeof __dirname !== 'undefined' ? __dirname : process.cwd();
+  const vPath = path.resolve(root, 'public', 'version.json');
+  const todayKst = getKstDateString();
+
+  let existing: { date: string; patch: number; hasPatch: boolean } | null = null;
+  try {
+    if (fs.existsSync(vPath)) {
+      const content = JSON.parse(fs.readFileSync(vPath, 'utf-8'));
+      existing = parseStoredVersion(content?.version);
+    }
+  } catch (e) {
+    console.debug('Failed to read existing version.json:', e);
+  }
+
+  let nextPatch = 1;
+  if (command === 'build') {
+    // 배포(빌드) 시: 오늘 날짜가 같으면 패치 번호 +1 자동 증가, 날짜가 바뀌면 01로 초기화
+    if (existing && existing.date === todayKst) {
+      nextPatch = existing.patch + 1;
+    } else {
+      nextPatch = 1;
+    }
+  } else {
+    // 개발 서버(serve) 실행 시: 오늘 날짜의 유효한 패치 버전이 있으면 유지하고, 날짜 변경/미설정 시 01로 초기화
+    if (existing && existing.date === todayKst && existing.hasPatch && existing.patch >= 1) {
+      nextPatch = existing.patch;
+    } else {
+      nextPatch = 1;
+    }
+  }
+
+  const patchStr = String(nextPatch).padStart(2, '0');
+  const version = `V${todayKst}.${patchStr}`;
+  const buildId = `tabzone-${version}`;
+
+  cachedBuildVersionInfo = {
+    buildDate: todayKst,
+    patchNum: nextPatch,
+    patchStr,
+    version,
+    buildId,
+  };
+
+  return cachedBuildVersionInfo;
+}
+
+function versionJsonPlugin(versionInfo: VersionInfo) {
   return {
     name: 'version-json-sync',
     buildStart() {
@@ -28,7 +99,17 @@ function versionJsonPlugin() {
         const vPath = path.resolve(publicDir, 'version.json');
         fs.writeFileSync(
           vPath,
-          JSON.stringify({ version: BUILD_VERSION, buildId: BUILD_ID }, null, 2),
+          JSON.stringify(
+            {
+              version: versionInfo.version,
+              buildDate: versionInfo.buildDate,
+              patch: versionInfo.patchNum,
+              buildId: versionInfo.buildId,
+              updatedAt: new Date().toISOString(),
+            },
+            null,
+            2
+          ),
           'utf-8'
         );
       } catch (e) {
@@ -38,17 +119,20 @@ function versionJsonPlugin() {
   };
 }
 
-export default defineConfig(() => {
+export default defineConfig(({ command }) => {
+  const versionInfo = resolveVersionInfo(command);
+
   return {
     define: {
-      __APP_VERSION__: JSON.stringify(BUILD_VERSION),
-      __BUILD_ID__: JSON.stringify(BUILD_ID),
-      'import.meta.env.VITE_APP_BUILD_DATE': JSON.stringify(BUILD_DATE_STR),
-      'import.meta.env.VITE_APP_VERSION': JSON.stringify(BUILD_VERSION),
-      'import.meta.env.VITE_BUILD_ID': JSON.stringify(BUILD_ID),
+      __APP_VERSION__: JSON.stringify(versionInfo.version),
+      __BUILD_ID__: JSON.stringify(versionInfo.buildId),
+      'import.meta.env.VITE_APP_BUILD_DATE': JSON.stringify(versionInfo.buildDate),
+      'import.meta.env.VITE_APP_BUILD_PATCH': JSON.stringify(versionInfo.patchStr),
+      'import.meta.env.VITE_APP_VERSION': JSON.stringify(versionInfo.version),
+      'import.meta.env.VITE_BUILD_ID': JSON.stringify(versionInfo.buildId),
     },
     plugins: [
-      versionJsonPlugin(),
+      versionJsonPlugin(versionInfo),
       react(),
       tailwindcss(),
       VitePWA({
@@ -141,7 +225,7 @@ export default defineConfig(() => {
           ],
         },
         devOptions: {
-          enabled: true,
+          enabled: false,
           type: 'module',
         },
       }),

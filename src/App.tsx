@@ -21,7 +21,7 @@ import {
   Users,
 } from 'lucide-react';
 import React, { useEffect, useState } from 'react';
-import { APP_VERSION } from './constants/version';
+import { APP_VERSION, isNewerVersion } from './lib/appVersion';
 import { playRentalSuccessSound, playReturnSuccessSound } from './utils/sound';
 import { AdminAnalyticsModal } from './components/AdminAnalyticsModal';
 import { AuditLogModal } from './components/AuditLogModal';
@@ -103,8 +103,13 @@ function isAllowedAccessEnvironment(): boolean {
 
   const hostname = window.location.hostname.toLowerCase();
 
-  // 2. localhost 또는 127.0.0.1인 경우 무조건 렌더링 허용
-  if (hostname === 'localhost' || hostname === '127.0.0.1') {
+  // 2. localhost, 127.0.0.1, [::1] 또는 개발 서버 호스트인 경우 무조건 렌더링 허용
+  if (
+    hostname === 'localhost' ||
+    hostname === '127.0.0.1' ||
+    hostname === '[::1]' ||
+    hostname.startsWith('ais-dev-')
+  ) {
     return true;
   }
 
@@ -809,10 +814,19 @@ function AppContent() {
       </main>
 
       {/* Footer */}
-      <footer className="mt-auto py-6 border-t border-slate-200 bg-white text-center text-xs text-slate-400 font-normal select-none">
-        <div className="max-w-[1440px] mx-auto px-4 flex items-center justify-center gap-2 sm:gap-2.5">
-          <span>Copyright 2026. 버버&amp;싱글라이더</span>
-          <span className="text-slate-300">|</span>
+      <footer className="mt-auto py-5 border-t border-slate-200/80 bg-white text-center text-xs text-slate-500 font-normal select-none">
+        <div className="max-w-[1440px] mx-auto px-4 flex flex-wrap items-center justify-center gap-2.5 sm:gap-3">
+          <span className="text-slate-500 font-normal tracking-tight">
+            Copyright 2026 버버&amp;싱글라이더
+          </span>
+
+          <span
+            className="px-2.5 py-1 rounded-lg bg-slate-100/90 border border-slate-200/90 text-slate-600 font-mono text-xs font-medium tracking-tight"
+            title={`현재 배포 버전: ${APP_VERSION}`}
+          >
+            {APP_VERSION}
+          </span>
+
           <button
             type="button"
             onClick={async () => {
@@ -827,9 +841,11 @@ function AppContent() {
                   });
                   if (res.ok) {
                     const data = await res.json();
-                    if (data?.version && typeof data.version === 'string' && data.version.trim() !== APP_VERSION) {
+                    const candidate =
+                      typeof data?.version === 'string' ? data.version.trim() : null;
+                    if (candidate && isNewerVersion(candidate, APP_VERSION)) {
                       hasRealUpdate = true;
-                      remoteVersion = data.version.trim();
+                      remoteVersion = candidate;
                     }
                   }
                 } catch {}
@@ -837,19 +853,20 @@ function AppContent() {
                 if ('serviceWorker' in navigator) {
                   const reg = await navigator.serviceWorker.getRegistration();
                   if (reg) {
-                    await reg.update();
+                    await reg.update().catch(() => {});
                     if (hasRealUpdate && reg.waiting) {
                       reg.waiting.postMessage({ type: 'SKIP_WAITING' });
-                      showToast(`새로운 업데이트가 있습니다. (${remoteVersion || '신규 버전'})`);
-                      window.dispatchEvent(new CustomEvent('pwa-show-update-prompt', { detail: { force: true } }));
-                      return;
                     }
                   }
                 }
 
                 if (hasRealUpdate && remoteVersion) {
                   showToast(`새로운 업데이트가 있습니다. (${remoteVersion})`);
-                  window.dispatchEvent(new CustomEvent('pwa-show-update-prompt', { detail: { force: true } }));
+                  window.dispatchEvent(
+                    new CustomEvent('pwa-show-update-prompt', {
+                      detail: { force: true, version: remoteVersion },
+                    })
+                  );
                   return;
                 }
 
@@ -860,20 +877,18 @@ function AppContent() {
                 showToast(`최신 버전을 사용 중입니다. (${APP_VERSION})`);
               }
             }}
-            className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md border border-slate-300 hover:border-blue-400 bg-white hover:bg-slate-50 active:scale-95 text-slate-500 hover:text-blue-700 transition cursor-pointer shadow-2xs font-bold text-xs"
+            className="inline-flex items-center gap-1.5 px-4 py-1.5 rounded-full bg-slate-100 hover:bg-slate-200/80 active:scale-95 text-slate-700 transition cursor-pointer font-semibold text-xs"
             title={`최신 버전 확인 (현재 릴리즈: ${APP_VERSION})`}
             aria-label="업데이트 확인"
           >
-            <RefreshCw className="w-3.5 h-3.5 text-slate-400 hover:text-blue-600 animate-spin-hover" />
+            <RefreshCw className="w-3.5 h-3.5 text-slate-600" />
             <span>업데이트 확인</span>
-            <span className="px-1.5 py-0.2 rounded bg-slate-100 text-[10px] text-slate-600 font-mono font-bold border border-slate-200/80">
-              {APP_VERSION}
-            </span>
           </button>
+
           <button
             type="button"
             onClick={() => (currentUser ? setIsWhitelistModalOpen(true) : setIsLoginModalOpen(true))}
-            className="w-7 h-7 sm:w-7.5 sm:h-7.5 rounded-md border border-slate-300 hover:border-slate-400 bg-white hover:bg-slate-50 active:scale-95 text-slate-400 hover:text-slate-600 transition flex items-center justify-center cursor-pointer shadow-2xs"
+            className="w-7 h-7 rounded-full bg-slate-100/70 hover:bg-slate-200/80 active:scale-95 text-slate-400 hover:text-slate-600 transition flex items-center justify-center cursor-pointer"
             title="관리자 설정 (교직원 로그인)"
             aria-label="관리자 설정"
           >

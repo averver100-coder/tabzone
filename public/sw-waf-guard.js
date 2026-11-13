@@ -1,9 +1,11 @@
 /**
  * TabZone Service Worker - Network First & Cloudflare WAF Enforcement Guard
  *
- * 1. Purges any legacy Cache-First precache stores on activation.
- * 2. Enforces strict Network-First probing on app navigation and version checks.
- * 3. If Cloudflare WAF blocks the request (403/401/503) or the network fails,
+ * 1. In development / local environments (localhost, 127.0.0.1, ais-dev-*),
+ *    never block or intercept requests so local/dev workflows always work.
+ * 2. Purges any legacy Cache-First precache stores on activation.
+ * 3. In production, enforces strict Network-First probing on app navigation.
+ * 4. If Cloudflare WAF blocks the request (403/401/503) or the network fails,
  *    never falls back to cached screens—renders "네트워크 접근이 거부되었습니다".
  */
 
@@ -39,6 +41,20 @@ const ACCESS_DENIED_HTML = `<!DOCTYPE html>
 </body>
 </html>`;
 
+function isLocalOrDevEnvironment() {
+  try {
+    const hostname = (self.location && self.location.hostname ? self.location.hostname : '').toLowerCase();
+    return (
+      hostname === 'localhost' ||
+      hostname === '127.0.0.1' ||
+      hostname === '[::1]' ||
+      hostname.startsWith('ais-dev-')
+    );
+  } catch (e) {
+    return false;
+  }
+}
+
 self.addEventListener('install', () => {
   self.skipWaiting();
 });
@@ -63,6 +79,11 @@ self.addEventListener('activate', (event) => {
 });
 
 self.addEventListener('fetch', (event) => {
+  // 개발/로컬 환경에서는 서비스 워커가 요청을 가로채거나 차단하지 않음
+  if (isLocalOrDevEnvironment()) {
+    return;
+  }
+
   const request = event.request;
 
   // Only handle GET requests
@@ -73,14 +94,17 @@ self.addEventListener('fetch', (event) => {
   const url = new URL(request.url);
 
   // 1. Navigation requests (HTML entry / PWA Home Screen launch):
-  // Always hit the server first (Network Only / Network First without offline HTML fallback)
+  // Always hit the server first (Network Only / Network First without offline HTML fallback).
+  // Note: Fetch using request.url string instead of passing RequestInit with a mode='navigate' Request object.
   if (request.mode === 'navigate' || request.destination === 'document') {
     event.respondWith(
       (async () => {
         try {
-          const networkResponse = await fetch(request, {
+          const networkResponse = await fetch(request.url, {
+            method: 'GET',
             cache: 'no-store',
             credentials: 'same-origin',
+            redirect: 'follow',
           });
 
           // If Cloudflare WAF blocks (403, 401, etc.) or server rejects
@@ -115,8 +139,11 @@ self.addEventListener('fetch', (event) => {
     event.respondWith(
       (async () => {
         try {
-          const networkResponse = await fetch(request, {
+          const networkResponse = await fetch(request.url, {
+            method: 'GET',
             cache: 'no-cache',
+            credentials: 'same-origin',
+            redirect: 'follow',
           });
 
           // If WAF blocks with 401/403, purge caches and return the error directly

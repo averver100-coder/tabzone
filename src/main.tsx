@@ -19,7 +19,12 @@ function isDevOrLocalHost(): boolean {
     return false;
   }
   const hostname = window.location.hostname.toLowerCase();
-  return hostname === 'localhost' || hostname === '127.0.0.1';
+  return (
+    hostname === 'localhost' ||
+    hostname === '127.0.0.1' ||
+    hostname === '[::1]' ||
+    hostname.startsWith('ais-dev-')
+  );
 }
 
 function checkAllowedHostOrDev(): boolean {
@@ -39,6 +44,17 @@ function NetworkFirstGate() {
   useEffect(() => {
     if (isDevLocal) {
       setAccessState('granted');
+      // 개발/로컬 환경에 이전에 등록된 서비스 워커가 남아 네트워크를 가로채는 경우 자동 해제
+      if (typeof navigator !== 'undefined' && 'serviceWorker' in navigator) {
+        navigator.serviceWorker
+          .getRegistrations()
+          .then((registrations) => {
+            registrations.forEach((reg) => {
+              reg.unregister().catch(() => {});
+            });
+          })
+          .catch(() => {});
+      }
       return;
     }
 

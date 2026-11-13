@@ -2,12 +2,14 @@ import { Loader2, RefreshCw, X } from 'lucide-react';
 import { AnimatePresence, motion } from 'motion/react';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { useRegisterSW } from 'virtual:pwa-register/react';
-import { APP_VERSION } from '../constants/version';
+import { APP_VERSION, isNewerVersion } from '../lib/appVersion';
 
 const RECENT_UPDATE_KEY = 'pwa_update_recently';
 const DISMISSED_VERSION_KEY = 'pwa_dismissed_version';
 // 업데이트 시도 직후 60초간 반복 알림 억제 가드
 const RECENT_WINDOW_MS = 60 * 1000;
+// 합리적인 백그라운드 버전 확인 주기 (15분)
+const BACKGROUND_CHECK_INTERVAL_MS = 15 * 60 * 1000;
 
 export const PWAUpdatePrompt: React.FC = () => {
   const [isApplying, setIsApplying] = useState(false);
@@ -27,62 +29,77 @@ export const PWAUpdatePrompt: React.FC = () => {
     return false;
   }, []);
 
-  // 2. 서버의 실제 배포 버전(version.json)과 현재 앱 버전(APP_VERSION) 엄격한 비교 로직
-  // 단순 타임스탬프 크기 비교가 아닌 실제 배포 버전 문자열이 다를 때만 업데이트로 판정
-  const verifyRealReleaseUpdate = useCallback(async (): Promise<{ isRealUpdate: boolean; newVersion: string | null }> => {
-    try {
-      // 캐시를 타지 않도록 no-store 헤더 및 타임스탬프 쿼리 적용
-      const response = await fetch(`/version.json?_t=${Date.now()}`, {
-        cache: 'no-store',
-        headers: {
-          'Cache-Control': 'no-cache, no-store, must-revalidate',
-          'Pragma': 'no-cache',
-        },
-      });
+  // 2. 서버의 실제 배포 버전(version.json)과 현재 앱 버전(APP_VERSION) 엄격 비교
+  // 서버 버전이 클라이언트 버전보다 상향(VYYYY.MM.DD.NN 기준)된 경우에만 업데이트로 판정
+  const verifyRealReleaseUpdate = useCallback(
+    async (ignoreDismissed = false): Promise<{ isRealUpdate: boolean; newVersion: string | null }> => {
+      try {
+        const response = await fetch(`/version.json?_t=${Date.now()}`, {
+          cache: 'no-store',
+          headers: {
+            'Cache-Control': 'no-cache, no-store, must-revalidate',
+            Pragma: 'no-cache',
+          },
+        });
 
-      if (response.ok) {
-        const data = await response.json();
-        const serverVersion = typeof data?.version === 'string' ? data.version.trim() : null;
+        if (response.ok) {
+          const data = await response.json();
+          const serverVersion = typeof data?.version === 'string' ? data.version.trim() : null;
 
-        // 엄격한 문자열 비교: 서버 버전이 존재하고, 현재 실행 중인 APP_VERSION과 명확히 다를 때만 허용
-        if (serverVersion && serverVersion !== APP_VERSION) {
-          // 사용자가 이미 '닫기'를 눌러 무시한 버전인지 확인
-          const dismissed = localStorage.getItem(DISMISSED_VERSION_KEY);
-          if (dismissed === serverVersion) {
-            console.debug('[PWA] Update banner dismissed previously for', serverVersion);
-            return { isRealUpdate: false, newVersion: serverVersion };
+          if (serverVersion && isNewerVersion(serverVersion, APP_VERSION)) {
+            if (!ignoreDismissed) {
+              try {
+                const dismissed = localStorage.getItem(DISMISSED_VERSION_KEY);
+                if (dismissed === serverVersion) {
+                  return { isRealUpdate: false, newVersion: serverVersion };
+                }
+              } catch {}
+            }
+            return { isRealUpdate: true, newVersion: serverVersion };
           }
-          return { isRealUpdate: true, newVersion: serverVersion };
+
+          return { isRealUpdate: false, newVersion: null };
         }
-
-        // 서버 버전이 현재 앱 버전과 동일한 경우 -> 실제 배포 없음 (가짜 알림 차단)
-        console.debug('[PWA] Server version (' + serverVersion + ') matches client (' + APP_VERSION + '). False alarm suppressed.');
-        return { isRealUpdate: false, newVersion: null };
+      } catch (e) {
+        console.debug('[PWA] Version check failed, suppressing false alarm:', e);
       }
-    } catch (e) {
-      console.debug('[PWA] Version check failed, suppressing false alarm:', e);
-    }
 
-    return { isRealUpdate: false, newVersion: null };
-  }, []);
+      return { isRealUpdate: false, newVersion: null };
+    },
+    []
+  );
+
+  const checkAndTriggerPrompt = useCallback(
+    async (ignoreDismissed = false) => {
+      if (isRecentlyUpdated() && !ignoreDismissed) return;
+      if (isVerifyingRef.current) return;
+      isVerifyingRef.current = true;
+      try {
+        const { isRealUpdate, newVersion } = await verifyRealReleaseUpdate(ignoreDismissed);
+        if (isRealUpdate && newVersion) {
+          setDetectedVersion(newVersion);
+          setShowPrompt(true);
+        }
+      } finally {
+        isVerifyingRef.current = false;
+      }
+    },
+    [isRecentlyUpdated, verifyRealReleaseUpdate]
+  );
 
   // 3. virtual:pwa-register/react 공식 훅 연결
-  // 과도한 폴링 및 탭 포커스(visibilitychange) 감시를 제거하고 안정적인 라이프사이클 기반으로 운영
   const {
     needRefresh: [needRefresh, setNeedRefresh],
     updateServiceWorker,
   } = useRegisterSW({
     onRegisteredSW(_swScriptUrl, registration) {
       if (registration) {
-        // 과도한 탭 이동/화면 켜짐(visibilitychange) 감시는 제거함.
-        // 60분 주기의 온건한 백그라운드 체크만 유지 (불필요한 네트워크 스팸 방지)
         const interval = setInterval(() => {
           if (!isRecentlyUpdated()) {
-            registration.update().catch((e) => {
-              console.debug('[PWA] Service Worker background check notice:', e);
-            });
+            registration.update().catch(() => {});
+            checkAndTriggerPrompt(false);
           }
-        }, 60 * 60 * 1000);
+        }, BACKGROUND_CHECK_INTERVAL_MS);
 
         return () => {
           clearInterval(interval);
@@ -94,10 +111,27 @@ export const PWAUpdatePrompt: React.FC = () => {
     },
   });
 
-  // 4. needRefresh 이벤트 발생 시: 서버 버전과 엄격하게 대조하여 실제 새 배포일 때만 UI 표시
+  // 4. 앱 최초 실행 시 1회 및 온건한 주기 백그라운드 버전 대조 (SW 미등록 환경 포함)
+  useEffect(() => {
+    if (isRecentlyUpdated()) return;
+
+    const initialTimer = setTimeout(() => {
+      checkAndTriggerPrompt(false);
+    }, 1500);
+
+    const bgTimer = setInterval(() => {
+      checkAndTriggerPrompt(false);
+    }, BACKGROUND_CHECK_INTERVAL_MS);
+
+    return () => {
+      clearTimeout(initialTimer);
+      clearInterval(bgTimer);
+    };
+  }, [checkAndTriggerPrompt, isRecentlyUpdated]);
+
+  // 5. needRefresh 이벤트 발생 시 서버 버전이 실제로 상향된 경우에만 UI 표시
   useEffect(() => {
     if (!needRefresh) {
-      setShowPrompt(false);
       return;
     }
 
@@ -110,13 +144,12 @@ export const PWAUpdatePrompt: React.FC = () => {
     if (isVerifyingRef.current) return;
     isVerifyingRef.current = true;
 
-    verifyRealReleaseUpdate()
+    verifyRealReleaseUpdate(false)
       .then(({ isRealUpdate, newVersion }) => {
         if (isRealUpdate && newVersion) {
           setDetectedVersion(newVersion);
           setShowPrompt(true);
         } else {
-          // 실제 새 릴리즈가 아니거나 동일 버전이면 즉시 알림 해제
           setNeedRefresh(false);
           setShowPrompt(false);
         }
@@ -126,7 +159,7 @@ export const PWAUpdatePrompt: React.FC = () => {
       });
   }, [needRefresh, setNeedRefresh, isRecentlyUpdated, verifyRealReleaseUpdate]);
 
-  // 5. Controller Change 감지 시 1회만 깔끔하게 페이지 리로드
+  // 6. Controller Change 감지 시 1회만 깔끔하게 페이지 리로드
   useEffect(() => {
     if (typeof window === 'undefined' || !('serviceWorker' in navigator)) return;
     let hasReloaded = false;
@@ -146,7 +179,7 @@ export const PWAUpdatePrompt: React.FC = () => {
     };
   }, []);
 
-  // 6. 테스트 파라미터 및 커스텀 이벤트 처리
+  // 7. 푸터 [업데이트 확인] 버튼 및 수동 체크 커스텀 이벤트 처리
   useEffect(() => {
     if (typeof window === 'undefined') return;
 
@@ -160,27 +193,36 @@ export const PWAUpdatePrompt: React.FC = () => {
     const handleCustomEvent = (e: Event) => {
       const customDetail = (e as CustomEvent)?.detail;
       const force = customDetail?.force === true;
+      const explicitVersion =
+        typeof customDetail?.version === 'string' ? customDetail.version.trim() : null;
 
-      if (force) {
+      if (force && explicitVersion && isNewerVersion(explicitVersion, APP_VERSION)) {
+        try {
+          localStorage.removeItem(DISMISSED_VERSION_KEY);
+        } catch {}
+        setDetectedVersion(explicitVersion);
         setShowPrompt(true);
         return;
       }
 
-      verifyRealReleaseUpdate().then(({ isRealUpdate, newVersion }) => {
-        if (isRealUpdate && newVersion) {
-          setDetectedVersion(newVersion);
-          setShowPrompt(true);
+      if (force) {
+        if (explicitVersion) {
+          setDetectedVersion(explicitVersion);
         }
-      });
+        setShowPrompt(true);
+        return;
+      }
+
+      checkAndTriggerPrompt(true);
     };
 
     window.addEventListener('pwa-show-update-prompt', handleCustomEvent);
     return () => {
       window.removeEventListener('pwa-show-update-prompt', handleCustomEvent);
     };
-  }, [isRecentlyUpdated, verifyRealReleaseUpdate]);
+  }, [isRecentlyUpdated, checkAndTriggerPrompt]);
 
-  // 7. 업데이트 적용 핸들러 (SKIP_WAITING 전송 + updateServiceWorker + 안전 리로드)
+  // 8. 원클릭 업데이트 적용 핸들러 (캐시 정리 + SKIP_WAITING + 리로드)
   const handleUpdate = async () => {
     if (isApplying) return;
     setIsApplying(true);
@@ -201,6 +243,13 @@ export const PWAUpdatePrompt: React.FC = () => {
       localStorage.removeItem(DISMISSED_VERSION_KEY);
     } catch {}
 
+    try {
+      if ('caches' in window) {
+        const keys = await caches.keys();
+        await Promise.all(keys.map((k) => caches.delete(k)));
+      }
+    } catch {}
+
     setShowPrompt(false);
     setNeedRefresh(false);
 
@@ -208,6 +257,7 @@ export const PWAUpdatePrompt: React.FC = () => {
       if ('serviceWorker' in navigator) {
         const registrations = await navigator.serviceWorker.getRegistrations();
         for (const reg of registrations) {
+          await reg.update().catch(() => {});
           if (reg.waiting) {
             reg.waiting.postMessage({ type: 'SKIP_WAITING' });
           }
@@ -225,10 +275,10 @@ export const PWAUpdatePrompt: React.FC = () => {
 
     setTimeout(() => {
       window.location.reload();
-    }, 600);
+    }, 500);
   };
 
-  // 8. 닫기 핸들러 (현재 감지된 버전 무시 저장)
+  // 9. 닫기 핸들러 (현재 감지된 버전 무시 저장)
   const handleClose = () => {
     if (detectedVersion) {
       try {
