@@ -21,6 +21,7 @@ import {
   BackupType,
   formatCartName,
   Rental,
+  TabletDevice,
   Teacher,
   WhitelistUser,
 } from '../types';
@@ -33,6 +34,7 @@ const LAST_AUTO_BACKUP_TS_KEY = 'tabzone_last_auto_backup_ts';
 
 // Core asset/operation collections to copy (explicitly EXCLUDES 'audit_logs' / 'auditLogs')
 export const BACKUP_INCLUDED_COLLECTIONS = [
+  'devices',
   'rentals',
   'whitelist',
   'teachers',
@@ -44,6 +46,7 @@ export const EXCLUDED_BACKUP_COLLECTIONS = ['audit_logs', 'auditLogs'] as const;
 export const AUTO_BACKUP_DEBOUNCE_MS = 60 * 60 * 1000; // 1 hour
 export const MAX_AUTO_BACKUPS = 10;
 
+const LOCAL_DEVICES_KEY = 'tabzone_devices_cache';
 const LOCAL_RENTALS_KEY = 'tabzone_rentals_cache';
 const LOCAL_WHITELIST_KEY = 'tabzone_whitelist_cache';
 const LOCAL_TEACHERS_KEY = 'tabzone_teachers_cache';
@@ -230,19 +233,25 @@ export async function fetchBackups(): Promise<BackupRecord[]> {
  * IMPORTANT: Explicitly excludes 'audit_logs' / 'auditLogs' to optimize storage & cost.
  */
 async function collectCoreBackupPayload(): Promise<BackupPayloadData> {
+  let devices: TabletDevice[] = [];
   let rentals: Rental[] = [];
   let whitelist: WhitelistUser[] = [];
   let teachers: Teacher[] = [];
   let approvers: Approver[] = [];
 
   try {
-    const [rentalsSnap, whitelistSnap, teachersSnap, approversSnap] = await Promise.all([
+    const [devicesSnap, rentalsSnap, whitelistSnap, teachersSnap, approversSnap] = await Promise.all([
+      getDocs(collection(db, 'devices')),
       getDocs(query(collection(db, 'rentals'), orderBy('createdAt', 'desc'), limit(500))),
       getDocs(collection(db, 'whitelist')),
       getDocs(collection(db, 'teachers')),
       getDocs(collection(db, 'approvers')),
     ]);
 
+    devicesSnap.forEach((d) => {
+      const item = d.data() as TabletDevice;
+      if (item && item.id) devices.push(item);
+    });
     rentalsSnap.forEach((d) => {
       const item = d.data() as Rental;
       if (item && item.id) rentals.push(item);
@@ -264,6 +273,11 @@ async function collectCoreBackupPayload(): Promise<BackupPayloadData> {
   }
 
   // Merge local cache fallbacks so offline/optimistic changes are captured
+  const localDevices = readLocalJson<TabletDevice[]>(LOCAL_DEVICES_KEY, []);
+  if (devices.length === 0 && localDevices.length > 0) {
+    devices = localDevices;
+  }
+
   const localRentals = readLocalJson<Rental[]>(LOCAL_RENTALS_KEY, []);
   if (rentals.length === 0 && localRentals.length > 0) {
     rentals = localRentals;
@@ -287,7 +301,9 @@ async function collectCoreBackupPayload(): Promise<BackupPayloadData> {
 
   // Safety guard for Firestore 1MB document size limit
   let sanitizedRentals = stripUndefinedDeep(rentals);
+  const sanitizedDevices = stripUndefinedDeep(devices);
   const basePayload = stripUndefinedDeep({
+    devices: sanitizedDevices,
     rentals: sanitizedRentals,
     whitelist,
     teachers,
@@ -299,6 +315,7 @@ async function collectCoreBackupPayload(): Promise<BackupPayloadData> {
   }
 
   return stripUndefinedDeep({
+    devices: sanitizedDevices,
     rentals: sanitizedRentals,
     whitelist,
     teachers,
@@ -410,6 +427,7 @@ export async function backupData(
         ? '관리자 수동 확정 영구 스냅샷'
         : '데이터 변동 감지 자동 순환 백업'),
     counts: {
+      devices: payload.devices?.length || 0,
       rentals: payload.rentals.length,
       whitelist: payload.whitelist.length,
       teachers: payload.teachers.length,
@@ -439,7 +457,7 @@ export async function backupData(
     await createAuditLog(
       operator,
       '수동 영구 백업 생성',
-      `자산 실사 확정 영구 스냅샷 생성 (대여 ${record.counts.rentals}건, 화이트리스트 ${record.counts.whitelist}명)`,
+      `자산 실사 확정 영구 스냅샷 생성 (기기 ${record.counts.devices ?? 0}대, 대여 ${record.counts.rentals}건, 화이트리스트 ${record.counts.whitelist}명)`,
       `스냅샷 ID: ${record.id}, 비고: ${record.note}`
     );
   }
@@ -581,6 +599,10 @@ export async function restoreFromBackup(
     throw new Error('복원할 백업 데이터가 올바르지 않습니다.');
   }
 
+  const hasDevicesField = Array.isArray(backup.data.devices);
+  const restoredDevices = hasDevicesField
+    ? stripUndefinedDeep(backup.data.devices || [])
+    : [];
   const restoredRentals = stripUndefinedDeep(backup.data.rentals || []);
   const restoredWhitelist = ensureBuiltinAdminsList(
     stripUndefinedDeep(backup.data.whitelist || [])
@@ -592,12 +614,22 @@ export async function restoreFromBackup(
   const ops: Array<{ type: 'set' | 'delete'; path: [string, string]; data?: unknown }> = [];
 
   try {
-    const [curRentals, curWhitelist, curTeachers, curApprovers] = await Promise.all([
+    const [curDevices, curRentals, curWhitelist, curTeachers, curApprovers] = await Promise.all([
+      hasDevicesField ? getDocs(collection(db, 'devices')) : Promise.resolve(null),
       getDocs(collection(db, 'rentals')),
       getDocs(collection(db, 'whitelist')),
       getDocs(collection(db, 'teachers')),
       getDocs(collection(db, 'approvers')),
     ]);
+
+    if (hasDevicesField && curDevices) {
+      const deviceIds = new Set(restoredDevices.map((dev) => dev.id));
+      curDevices.forEach((d) => {
+        if (!deviceIds.has(d.id)) {
+          ops.push({ type: 'delete', path: ['devices', d.id] });
+        }
+      });
+    }
 
     const rentalIds = new Set(restoredRentals.map((r) => r.id));
     curRentals.forEach((d) => {
@@ -635,6 +667,13 @@ export async function restoreFromBackup(
   }
 
   // 2. Queue set operations for snapshot data
+  if (hasDevicesField) {
+    restoredDevices.forEach((dev) => {
+      if (dev && dev.id) {
+        ops.push({ type: 'set', path: ['devices', dev.id], data: dev });
+      }
+    });
+  }
   restoredRentals.forEach((r) => {
     if (r && r.id) {
       ops.push({ type: 'set', path: ['rentals', r.id], data: r });
@@ -661,6 +700,9 @@ export async function restoreFromBackup(
   });
 
   // 3. Synchronize localStorage caches immediately so listeners reflect restored state cleanly
+  if (hasDevicesField) {
+    writeLocalJson(LOCAL_DEVICES_KEY, restoredDevices);
+  }
   writeLocalJson(LOCAL_RENTALS_KEY, restoredRentals.slice(0, 200));
   writeLocalJson(LOCAL_WHITELIST_KEY, restoredWhitelist);
   writeLocalJson(LOCAL_TEACHERS_KEY, restoredTeachers);
@@ -670,6 +712,7 @@ export async function restoreFromBackup(
   await commitOperationsInBatches(ops);
 
   const restoredPayload: BackupPayloadData = {
+    ...(hasDevicesField ? { devices: restoredDevices } : {}),
     rentals: restoredRentals,
     whitelist: restoredWhitelist,
     teachers: restoredTeachers,
@@ -690,7 +733,7 @@ export async function restoreFromBackup(
     `[${backup.backupType === 'manual' ? '수동 영구 스냅샷' : '자동 순환 백업'}] (${new Date(
       backup.createdAt
     ).toLocaleString('ko-KR')}) 시점으로 데이터 복원 실행`,
-    `복원 내역: 대여·반납 ${restoredRentals.length}건, 화이트리스트 ${restoredWhitelist.length}명, 교사 ${restoredTeachers.length}명, 승인자 ${restoredApprovers.length}명`
+    `복원 내역: ${hasDevicesField ? `기기 ${restoredDevices.length}대, ` : ''}대여·반납 ${restoredRentals.length}건, 화이트리스트 ${restoredWhitelist.length}명, 교사 ${restoredTeachers.length}명, 승인자 ${restoredApprovers.length}명`
   );
 
   return restoredPayload;
@@ -758,6 +801,7 @@ export function exportBackupPayloadToExcel(
         : new Date().toLocaleString('ko-KR'),
     },
     { 항목: '앱 버전', 값: meta?.version || APP_VERSION },
+    { 항목: '등록 태블릿 기기리스트 수', 값: `${payload.devices?.length || 0}대` },
     { 항목: '대여/반납 내역 수', 값: `${payload.rentals.length}건` },
     { 항목: '화이트리스트 교직원 수', 값: `${payload.whitelist.length}명` },
     { 항목: '등록 담당 교사 수', 값: `${payload.teachers.length}명` },
@@ -772,6 +816,25 @@ export function exportBackupPayloadToExcel(
   ];
   const wsSummary = XLSX.utils.json_to_sheet(summaryRows);
   XLSX.utils.book_append_sheet(wb, wsSummary, '백업_요약');
+
+  // Sheet 2: Tablet Devices List
+  const deviceRows = (payload.devices || []).map((d, idx) => ({
+    번호: idx + 1,
+    보관함: d.cartName,
+    슬롯번호: d.slotNumber,
+    관리번호: d.assetNumber,
+    모델명: d.modelName,
+    시리얼번호: d.serialNumber || '',
+    상태: d.status,
+    비고: d.notes || '',
+    최종수정일시: d.updatedAt ? new Date(d.updatedAt).toLocaleString('ko-KR') : '',
+    수정자: d.updatedBy || '',
+    ID: d.id,
+  }));
+  const wsDevices = XLSX.utils.json_to_sheet(
+    deviceRows.length > 0 ? deviceRows : [{ 안내: '데이터 없음' }]
+  );
+  XLSX.utils.book_append_sheet(wb, wsDevices, '기기리스트');
 
   // Sheet 2: Rentals
   const rentalRows = payload.rentals.map((r, idx) => ({

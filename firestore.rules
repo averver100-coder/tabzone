@@ -65,6 +65,19 @@ service cloud.firestore {
       allow delete: if isValidId(backupId);
     }
 
+    // Devices collection (Tablet device inventory list)
+    match /devices/{deviceId} {
+      allow read: if true;
+      allow create, update: if isValidId(deviceId)
+        && request.resource.data.cartName in ['보관함 1', '보관함 2']
+        && request.resource.data.assetNumber is string
+        && request.resource.data.assetNumber.size() <= 50
+        && request.resource.data.modelName is string
+        && request.resource.data.modelName.size() <= 100
+        && request.resource.data.status in ['정상', '점검필요', '수리중', '분실/폐기'];
+      allow delete: if isValidId(deviceId);
+    }
+
     // Default catch-all
     match /{document=**} {
       allow read, write: if false;

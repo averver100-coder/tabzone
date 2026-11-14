@@ -36,12 +36,14 @@ import {
   AuthUser,
   BackupRecord,
   Rental,
+  TabletDevice,
   Teacher,
   WhitelistUser,
 } from '../types';
 
 interface BackupManagementTabProps {
   currentUser?: AuthUser | null;
+  devices: TabletDevice[];
   rentals: Rental[];
   whitelistUsers: WhitelistUser[];
   teachers: Teacher[];
@@ -75,6 +77,7 @@ function formatDateTimeFull(iso?: string): string {
 
 export const BackupManagementTab: React.FC<BackupManagementTabProps> = ({
   currentUser,
+  devices,
   rentals,
   whitelistUsers,
   teachers,
@@ -183,6 +186,7 @@ export const BackupManagementTab: React.FC<BackupManagementTabProps> = ({
     try {
       exportBackupPayloadToExcel(
         {
+          devices,
           rentals,
           whitelist: whitelistUsers,
           teachers,
@@ -250,9 +254,11 @@ export const BackupManagementTab: React.FC<BackupManagementTabProps> = ({
         type: 'success',
         text: `[${formatDateTimeFull(
           restoreTarget.createdAt
-        )}] 시점으로 데이터 복원이 완료되었습니다. (대여 ${
-          restored.rentals.length
-        }건, 화이트리스트 ${restored.whitelist.length}명)`,
+        )}] 시점으로 데이터 복원이 완료되었습니다. (기기 ${
+          restored.devices?.length ?? 0
+        }대, 대여 ${restored.rentals.length}건, 화이트리스트 ${
+          restored.whitelist.length
+        }명)`,
       });
       setRestoreTarget(null);
       setRestoreConfirmInput('');
@@ -287,11 +293,13 @@ export const BackupManagementTab: React.FC<BackupManagementTabProps> = ({
 
   const renderBackupRow = (backup: BackupRecord, isManual: boolean) => {
     const counts = backup.counts || {
+      devices: backup.data?.devices?.length || 0,
       rentals: backup.data?.rentals?.length || 0,
       whitelist: backup.data?.whitelist?.length || 0,
       teachers: backup.data?.teachers?.length || 0,
       approvers: backup.data?.approvers?.length || 0,
     };
+    const deviceCount = counts.devices ?? backup.data?.devices?.length ?? 0;
     const staffTotal = (counts.teachers || 0) + (counts.approvers || 0);
 
     return (
@@ -342,6 +350,8 @@ export const BackupManagementTab: React.FC<BackupManagementTabProps> = ({
             <span className="font-mono text-slate-600">
               생성: {formatDateTimeFull(backup.createdAt)}
             </span>
+            <span className="text-slate-300">·</span>
+            <span className="font-bold text-indigo-700">기기리스트 {deviceCount}대</span>
             <span className="text-slate-300">·</span>
             <span>대여 {counts.rentals}건</span>
             <span className="text-slate-300">·</span>
@@ -444,7 +454,7 @@ export const BackupManagementTab: React.FC<BackupManagementTabProps> = ({
               </div>
 
               <p className="text-xs text-slate-300 leading-relaxed">
-                용량 및 비용 최적화를 위해 핵심 자산(대여·화이트리스트·교사·승인자)만 백업하며{' '}
+                용량 및 비용 최적화를 위해 핵심 자산(기기리스트·대여·화이트리스트·교사·승인자)만 백업하며{' '}
                 <strong className="text-amber-300 font-bold">
                   보안 감사 로그(auditLogs)는 백업에서 제외
                 </strong>
@@ -492,9 +502,27 @@ export const BackupManagementTab: React.FC<BackupManagementTabProps> = ({
           </div>
         </div>
 
-        {/* Bottom 4 Stat Cards */}
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-          {/* Stat 1: Rentals */}
+        {/* Bottom 5 Stat Cards */}
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
+          {/* Stat 1: Tablet Devices */}
+          <div className="rounded-xl bg-white/5 border border-white/10 px-4 py-3.5 flex items-center justify-between">
+            <div>
+              <div className="text-[11px] font-semibold text-slate-300">
+                기기리스트 (백업 대상)
+              </div>
+              <div className="mt-1 flex items-baseline gap-1">
+                <span className="text-xl sm:text-2xl font-black text-sky-400">
+                  {devices.length}
+                </span>
+                <span className="text-xs text-slate-400 font-semibold">대</span>
+              </div>
+            </div>
+            <div className="w-9 h-9 rounded-xl bg-sky-500/20 border border-sky-400/25 flex items-center justify-center">
+              <Tablet className="w-4 h-4 text-sky-300" />
+            </div>
+          </div>
+
+          {/* Stat 2: Rentals */}
           <div className="rounded-xl bg-white/5 border border-white/10 px-4 py-3.5 flex items-center justify-between">
             <div>
               <div className="text-[11px] font-semibold text-slate-300">
@@ -508,11 +536,11 @@ export const BackupManagementTab: React.FC<BackupManagementTabProps> = ({
               </div>
             </div>
             <div className="w-9 h-9 rounded-xl bg-indigo-500/20 border border-indigo-400/25 flex items-center justify-center">
-              <Tablet className="w-4 h-4 text-indigo-300" />
+              <History className="w-4 h-4 text-indigo-300" />
             </div>
           </div>
 
-          {/* Stat 2: Whitelist */}
+          {/* Stat 3: Whitelist */}
           <div className="rounded-xl bg-white/5 border border-white/10 px-4 py-3.5 flex items-center justify-between">
             <div>
               <div className="text-[11px] font-semibold text-slate-300">
@@ -530,7 +558,7 @@ export const BackupManagementTab: React.FC<BackupManagementTabProps> = ({
             </div>
           </div>
 
-          {/* Stat 3: Teachers & Approvers */}
+          {/* Stat 4: Teachers & Approvers */}
           <div className="rounded-xl bg-white/5 border border-white/10 px-4 py-3.5 flex items-center justify-between">
             <div>
               <div className="text-[11px] font-semibold text-slate-300">
@@ -548,8 +576,8 @@ export const BackupManagementTab: React.FC<BackupManagementTabProps> = ({
             </div>
           </div>
 
-          {/* Stat 4: Excluded Audit Logs */}
-          <div className="rounded-xl bg-white/[0.03] border border-white/10 px-4 py-3.5 flex items-center justify-between">
+          {/* Stat 5: Excluded Audit Logs */}
+          <div className="rounded-xl bg-white/[0.03] border border-white/10 px-4 py-3.5 flex items-center justify-between col-span-2 sm:col-span-1">
             <div>
               <div className="text-[11px] font-semibold text-slate-400">
                 보안 감사 로그 (백업 제외)
@@ -705,7 +733,7 @@ export const BackupManagementTab: React.FC<BackupManagementTabProps> = ({
                   <span>
                     이 작업을 실행하면 현재 Firestore 서버와 앱의{' '}
                     <strong className="underline">
-                      대여/반납 내역, 화이트리스트, 담당 교사, 승인자 목록이 모두 아래 스냅샷 시점으로 덮어씌워집니다.
+                      기기리스트, 대여/반납 내역, 화이트리스트, 담당 교사, 승인자 목록이 모두 아래 스냅샷 시점으로 덮어씌워집니다.
                     </strong>{' '}
                     (기본 시스템 슈퍼관리자 계정은 보호됩니다)
                   </span>
@@ -734,9 +762,10 @@ export const BackupManagementTab: React.FC<BackupManagementTabProps> = ({
                     {formatDateTimeFull(restoreTarget.createdAt)}
                   </span>
                 </div>
-                <div className="flex items-center justify-between">
-                  <span className="font-bold text-slate-500">포함 데이터</span>
-                  <span className="font-bold text-slate-800">
+                <div className="flex items-center justify-between gap-2">
+                  <span className="font-bold text-slate-500 shrink-0">포함 데이터</span>
+                  <span className="font-bold text-slate-800 text-right">
+                    기기 {restoreTarget.counts?.devices ?? restoreTarget.data?.devices?.length ?? 0}대 ·
                     대여 {restoreTarget.counts?.rentals ?? restoreTarget.data?.rentals?.length ?? 0}건 ·
                     교직원 {restoreTarget.counts?.whitelist ?? restoreTarget.data?.whitelist?.length ?? 0}명 ·
                     교사/승인 {(restoreTarget.counts?.teachers ?? 0) + (restoreTarget.counts?.approvers ?? 0)}명

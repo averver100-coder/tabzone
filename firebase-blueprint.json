@@ -257,6 +257,64 @@
         }
       },
       "required": ["id", "backupType", "createdAt", "createdBy", "version", "counts", "data"]
+    },
+    "TabletDevice": {
+      "title": "TabletDevice",
+      "description": "보관함별 태블릿 기기 자산 목록",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "기기 고유 식별자"
+        },
+        "cartName": {
+          "type": "string",
+          "description": "소속 보관함",
+          "enum": ["보관함 1", "보관함 2"]
+        },
+        "slotNumber": {
+          "type": "number",
+          "description": "보관함 내 슬롯 번호"
+        },
+        "assetNumber": {
+          "type": "string",
+          "description": "기기 관리번호 (예: TAB1-01)",
+          "maxLength": 50
+        },
+        "modelName": {
+          "type": "string",
+          "description": "기기 모델명",
+          "maxLength": 100
+        },
+        "serialNumber": {
+          "type": "string",
+          "description": "기기 시리얼 번호",
+          "maxLength": 100
+        },
+        "status": {
+          "type": "string",
+          "description": "기기 상태",
+          "enum": ["정상", "점검필요", "수리중", "분실/폐기"]
+        },
+        "notes": {
+          "type": "string",
+          "description": "비고 및 특이사항",
+          "maxLength": 300
+        },
+        "createdAt": {
+          "type": "string",
+          "description": "등록 일시"
+        },
+        "updatedAt": {
+          "type": "string",
+          "description": "최종 수정 일시"
+        },
+        "updatedBy": {
+          "type": "string",
+          "description": "수정자 이메일"
+        }
+      },
+      "required": ["id", "cartName", "slotNumber", "assetNumber", "modelName", "status", "createdAt"]
     }
   },
   "firestore": {
@@ -283,6 +341,10 @@
     "/backups/{backupId}": {
       "schema": "Backup",
       "description": "자동 순환 백업(auto) 및 수동 영구 스냅샷(manual) 저장소"
+    },
+    "/devices/{deviceId}": {
+      "schema": "TabletDevice",
+      "description": "보관함 1·2 소속 태블릿 기기리스트 자산 대장"
     }
   }
 }

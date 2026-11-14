@@ -26,6 +26,7 @@ import { SUPER_ADMIN_EMAIL } from '../services/authService';
 import { RentalUpdateInput } from '../services/rentalService';
 import { compareTeachers } from '../services/teacherService';
 import { BackupManagementTab } from './BackupManagementTab';
+import { DeviceManagementTab } from './DeviceManagementTab';
 import {
   Approver,
   AuthUser,
@@ -33,16 +34,18 @@ import {
   formatCartName,
   Rental,
   RentalStatus,
+  TabletDevice,
   Teacher,
   WhitelistUser,
 } from '../types';
 
-export type MasterTabType = 'rentals' | 'whitelist' | 'backup' | 'teachers' | 'approvers';
+export type MasterTabType = 'rentals' | 'devices' | 'whitelist' | 'backup' | 'teachers' | 'approvers';
 
 interface WhitelistModalProps {
   isOpen: boolean;
   onClose: () => void;
   currentUser?: AuthUser | null;
+  devices: TabletDevice[];
   rentals: Rental[];
   onUpdateRental: (originalRental: Rental, updates: RentalUpdateInput) => Promise<void>;
   onDeleteRental?: (rental: Rental) => Promise<void>;
@@ -100,6 +103,7 @@ export const WhitelistModal: React.FC<WhitelistModalProps> = ({
   isOpen,
   onClose,
   currentUser,
+  devices,
   rentals,
   onUpdateRental,
   onDeleteRental,
@@ -547,6 +551,22 @@ export const WhitelistModal: React.FC<WhitelistModalProps> = ({
           >
             <Edit3 className="w-4 h-4 text-indigo-600" />
             <span>대여/반납 내역 수정 ({rentals.length})</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => {
+              setActiveTab('devices');
+              setMsg(null);
+            }}
+            className={`h-12 px-4 sm:px-5 rounded-t-2xl text-xs sm:text-sm font-black transition cursor-pointer flex items-center gap-2 border-b-2 whitespace-nowrap ${
+              activeTab === 'devices'
+                ? 'border-sky-600 bg-white text-sky-900 shadow-xs'
+                : 'border-transparent text-slate-500 hover:text-slate-800'
+            }`}
+          >
+            <Tablet className="w-4 h-4 text-sky-600" />
+            <span>기기리스트 관리 ({devices.length})</span>
           </button>
 
           <button
@@ -1615,10 +1635,20 @@ export const WhitelistModal: React.FC<WhitelistModalProps> = ({
             </div>
           )}
 
+          {/* TAB 1.5: TABLET DEVICES INVENTORY MANAGEMENT */}
+          {activeTab === 'devices' && (
+            <DeviceManagementTab
+              currentUser={currentUser}
+              devices={devices}
+              onStatusMessage={(statusMsg) => setMsg(statusMsg)}
+            />
+          )}
+
           {/* TAB 4: BACKUP & RESTORE MANAGEMENT (Superadmin only) */}
           {activeTab === 'backup' && isSuperAdmin && (
             <BackupManagementTab
               currentUser={currentUser}
+              devices={devices}
               rentals={rentals}
               whitelistUsers={whitelistUsers}
               teachers={teachers}

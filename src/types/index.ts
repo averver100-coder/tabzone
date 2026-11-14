@@ -81,9 +81,26 @@ export interface CartCapacity {
   available: number;
 }
 
+export type DeviceStatus = '정상' | '점검필요' | '수리중' | '분실/폐기';
+
+export interface TabletDevice {
+  id: string;
+  cartName: '보관함 1' | '보관함 2';
+  slotNumber: number; // 보관함 내 슬롯 번호 (1~30+)
+  assetNumber: string; // 관리번호 (예: TAB1-01)
+  modelName: string; // 모델명 (예: Galaxy Tab S6 Lite)
+  serialNumber: string; // 시리얼 번호 (선택)
+  status: DeviceStatus;
+  notes?: string;
+  createdAt: string;
+  updatedAt?: string;
+  updatedBy?: string;
+}
+
 export type BackupType = 'auto' | 'manual';
 
 export interface BackupPayloadData {
+  devices?: TabletDevice[];
   rentals: Rental[];
   whitelist: WhitelistUser[];
   teachers: Teacher[];
@@ -99,6 +116,7 @@ export interface BackupRecord {
   source: string;
   note?: string;
   counts: {
+    devices?: number;
     rentals: number;
     whitelist: number;
     teachers: number;

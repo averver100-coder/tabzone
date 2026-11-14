@@ -82,12 +82,17 @@ import {
   subscribeToWhitelist,
 } from './services/whitelistService';
 import {
+  compareDevices,
+  subscribeToDevices,
+} from './services/deviceService';
+import {
   Approver,
   AuditLog,
   AuthUser,
   BackupPayloadData,
   CartType,
   Rental,
+  TabletDevice,
   Teacher,
   WhitelistUser,
 } from './types';
@@ -137,6 +142,7 @@ function AppContent() {
   const [rejectedEmail, setRejectedEmail] = useState<string | null>(null);
 
   // App Business State
+  const [devices, setDevices] = useState<TabletDevice[]>([]);
   const [rentals, setRentals] = useState<Rental[]>([]);
   const [whitelistUsers, setWhitelistUsers] = useState<WhitelistUser[]>([]);
   const [teachers, setTeachers] = useState<Teacher[]>([]);
@@ -346,6 +352,10 @@ function AppContent() {
 
   // 2. Real-time Subscriptions (Rentals, Whitelist, Teachers, Approvers, Audit Logs, Operating Hours)
   useEffect(() => {
+    const unsubDevices = subscribeToDevices((deviceList) => {
+      setDevices(deviceList);
+    });
+
     const unsubRentals = subscribeToRentals((data) => {
       setRentals(data);
     });
@@ -370,6 +380,9 @@ function AppContent() {
     const handleBackupRestored = (event: Event) => {
       const detail = (event as CustomEvent<BackupPayloadData>).detail;
       if (!detail) return;
+      if (Array.isArray(detail.devices)) {
+        setDevices([...detail.devices].sort(compareDevices));
+      }
       if (Array.isArray(detail.rentals)) setRentals(detail.rentals);
       if (Array.isArray(detail.whitelist)) setWhitelistUsers(detail.whitelist);
       if (Array.isArray(detail.teachers)) {
@@ -380,6 +393,7 @@ function AppContent() {
     window.addEventListener('tabzone-backup-restored', handleBackupRestored);
 
     return () => {
+      unsubDevices();
       unsubRentals();
       unsubWhitelist();
       unsubTeachers();
@@ -947,6 +961,7 @@ function AppContent() {
         isOpen={isWhitelistModalOpen}
         onClose={() => setIsWhitelistModalOpen(false)}
         currentUser={currentUser}
+        devices={devices}
         rentals={rentals}
         onUpdateRental={handleUpdateRental}
         onDeleteRental={handleDeleteRental}
