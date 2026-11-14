@@ -9,6 +9,7 @@ import {
 import { db } from '../lib/firebase';
 import { Approver } from '../types';
 import { createAuditLog } from './auditService';
+import { triggerAutoBackupIfNeeded } from './backupService';
 
 const APPROVERS_COLLECTION = 'approvers';
 const LOCAL_STORAGE_APPROVERS_KEY = 'tabzone_approvers_cache';
@@ -118,6 +119,8 @@ export async function addApprover(
     `등록자: ${operator.email}`
   );
 
+  triggerAutoBackupIfNeeded(operator, `대여 승인자 등록 (${data.name})`).catch(() => {});
+
   return data;
 }
 
@@ -144,4 +147,6 @@ export async function removeApprover(
     `대여 승인자 [${approverName}] 삭제`,
     `삭제자: ${operator.email}`
   );
+
+  triggerAutoBackupIfNeeded(operator, `대여 승인자 삭제 (${approverName})`).catch(() => {});
 }

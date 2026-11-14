@@ -85,6 +85,7 @@ import {
   Approver,
   AuditLog,
   AuthUser,
+  BackupPayloadData,
   CartType,
   Rental,
   Teacher,
@@ -366,12 +367,25 @@ function AppContent() {
       setAuditLogs(logs);
     });
 
+    const handleBackupRestored = (event: Event) => {
+      const detail = (event as CustomEvent<BackupPayloadData>).detail;
+      if (!detail) return;
+      if (Array.isArray(detail.rentals)) setRentals(detail.rentals);
+      if (Array.isArray(detail.whitelist)) setWhitelistUsers(detail.whitelist);
+      if (Array.isArray(detail.teachers)) {
+        setTeachers([...detail.teachers].sort(compareTeachers));
+      }
+      if (Array.isArray(detail.approvers)) setApprovers(detail.approvers);
+    };
+    window.addEventListener('tabzone-backup-restored', handleBackupRestored);
+
     return () => {
       unsubRentals();
-        unsubWhitelist();
+      unsubWhitelist();
       unsubTeachers();
       unsubApprovers();
       unsubAudit();
+      window.removeEventListener('tabzone-backup-restored', handleBackupRestored);
     };
   }, []);
 
@@ -945,6 +959,7 @@ function AppContent() {
         approvers={approvers}
         onAddApprover={handleAddApprover}
         onRemoveApprover={handleRemoveApprover}
+        auditLogsCount={auditLogs.length}
       />
 
       <AuditLogModal

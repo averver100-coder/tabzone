@@ -4,6 +4,7 @@ import {
   Check,
   CheckCircle,
   Clock,
+  Database,
   Edit3,
   FolderLock,
   GraduationCap,
@@ -24,6 +25,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { SUPER_ADMIN_EMAIL } from '../services/authService';
 import { RentalUpdateInput } from '../services/rentalService';
 import { compareTeachers } from '../services/teacherService';
+import { BackupManagementTab } from './BackupManagementTab';
 import {
   Approver,
   AuthUser,
@@ -35,7 +37,7 @@ import {
   WhitelistUser,
 } from '../types';
 
-export type MasterTabType = 'rentals' | 'whitelist' | 'teachers' | 'approvers';
+export type MasterTabType = 'rentals' | 'whitelist' | 'backup' | 'teachers' | 'approvers';
 
 interface WhitelistModalProps {
   isOpen: boolean;
@@ -53,6 +55,7 @@ interface WhitelistModalProps {
   approvers: Approver[];
   onAddApprover: (approver: { name: string; position: string }) => Promise<void>;
   onRemoveApprover: (approverId: string, name: string) => Promise<void>;
+  auditLogsCount?: number;
   initialTab?: MasterTabType;
 }
 
@@ -109,6 +112,7 @@ export const WhitelistModal: React.FC<WhitelistModalProps> = ({
   approvers,
   onAddApprover,
   onRemoveApprover,
+  auditLogsCount = 0,
   initialTab = 'rentals',
 }) => {
   const [activeTab, setActiveTab] = useState<MasterTabType>(initialTab);
@@ -492,9 +496,11 @@ export const WhitelistModal: React.FC<WhitelistModalProps> = ({
     return `${y}.${m}.${day} ${h}:${min}`;
   };
 
+  const isSuperAdmin = currentUser?.role === 'superadmin';
+
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-5 bg-black/50 overflow-hidden">
-      <div className="w-full max-w-5xl bg-white rounded-3xl shadow-2xl border border-slate-200 overflow-hidden my-auto max-h-[92vh] flex flex-col">
+      <div className="w-full max-w-6xl bg-white rounded-3xl shadow-2xl border border-slate-200 overflow-hidden my-auto max-h-[92vh] flex flex-col">
         {/* Modal Top Header */}
         <div className="px-6 sm:px-7 py-4.5 bg-gradient-to-r from-purple-800 via-indigo-800 to-blue-800 text-white flex items-center justify-between shrink-0">
           <div className="flex items-center gap-3.5">
@@ -588,8 +594,26 @@ export const WhitelistModal: React.FC<WhitelistModalProps> = ({
             }`}
           >
             <ShieldCheck className="w-4 h-4 text-purple-600" />
-            <span>화이트리스트 교직원 ({whitelistUsers.length})</span>
+            <span>화이트리스트 관리 ({whitelistUsers.length})</span>
           </button>
+
+          {isSuperAdmin && (
+            <button
+              type="button"
+              onClick={() => {
+                setActiveTab('backup');
+                setMsg(null);
+              }}
+              className={`h-12 px-4 sm:px-5 rounded-t-2xl text-xs sm:text-sm font-black transition cursor-pointer flex items-center gap-2 border-b-2 whitespace-nowrap ${
+                activeTab === 'backup'
+                  ? 'border-amber-600 bg-white text-amber-900 shadow-xs'
+                  : 'border-transparent text-slate-500 hover:text-slate-800'
+              }`}
+            >
+              <Database className="w-4 h-4 text-amber-600" />
+              <span>백업/복원</span>
+            </button>
+          )}
         </div>
 
         {/* Modal Scrollable Body */}
@@ -1589,6 +1613,19 @@ export const WhitelistModal: React.FC<WhitelistModalProps> = ({
                 </div>
               </div>
             </div>
+          )}
+
+          {/* TAB 4: BACKUP & RESTORE MANAGEMENT (Superadmin only) */}
+          {activeTab === 'backup' && isSuperAdmin && (
+            <BackupManagementTab
+              currentUser={currentUser}
+              rentals={rentals}
+              whitelistUsers={whitelistUsers}
+              teachers={teachers}
+              approvers={approvers}
+              auditLogsCount={auditLogsCount}
+              onStatusMessage={(statusMsg) => setMsg(statusMsg)}
+            />
           )}
         </div>
       </div>

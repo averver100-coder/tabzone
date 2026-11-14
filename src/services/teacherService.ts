@@ -9,6 +9,7 @@ import {
 import { db } from '../lib/firebase';
 import { Teacher } from '../types';
 import { createAuditLog } from './auditService';
+import { triggerAutoBackupIfNeeded } from './backupService';
 
 const TEACHERS_COLLECTION = 'teachers';
 const LOCAL_STORAGE_TEACHERS_KEY = 'tabzone_teachers_cache';
@@ -134,6 +135,8 @@ export async function addTeacher(
     `등록자: ${operator.email}`
   );
 
+  triggerAutoBackupIfNeeded(operator, `담당 교사 등록 (${data.name})`).catch(() => {});
+
   return data;
 }
 
@@ -160,4 +163,6 @@ export async function removeTeacher(
     `담당 교사 [${teacherName}] 삭제`,
     `삭제자: ${operator.email}`
   );
+
+  triggerAutoBackupIfNeeded(operator, `담당 교사 삭제 (${teacherName})`).catch(() => {});
 }

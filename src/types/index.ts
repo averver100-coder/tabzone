@@ -80,3 +80,30 @@ export interface CartCapacity {
   rented: number;
   available: number;
 }
+
+export type BackupType = 'auto' | 'manual';
+
+export interface BackupPayloadData {
+  rentals: Rental[];
+  whitelist: WhitelistUser[];
+  teachers: Teacher[];
+  approvers: Approver[];
+}
+
+export interface BackupRecord {
+  id: string;
+  backupType: BackupType;
+  createdAt: string;
+  createdBy: string;
+  version: string;
+  source: string;
+  note?: string;
+  counts: {
+    rentals: number;
+    whitelist: number;
+    teachers: number;
+    approvers: number;
+  };
+  data: BackupPayloadData;
+}
+

@@ -54,6 +54,17 @@ service cloud.firestore {
       allow read, write: if true;
     }
 
+    // Backups collection (Auto rotating backups & Manual permanent snapshots)
+    match /backups/{backupId} {
+      allow read: if true;
+      allow create: if isValidId(backupId)
+        && request.resource.data.backupType in ['auto', 'manual']
+        && request.resource.data.createdAt is string
+        && request.resource.data.createdAt.size() <= 64;
+      allow update: if false; // Snapshots are immutable
+      allow delete: if isValidId(backupId);
+    }
+
     // Default catch-all
     match /{document=**} {
       allow read, write: if false;

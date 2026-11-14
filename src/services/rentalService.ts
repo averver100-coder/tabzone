@@ -12,6 +12,7 @@ import {
 import { db } from '../lib/firebase';
 import { CartCapacity, CartType, Rental, RentalStatus } from '../types';
 import { createAuditLog } from './auditService';
+import { triggerAutoBackupIfNeeded } from './backupService';
 
 export const CART_CAPACITY = 30; // 30 tablets each for A and B cart (Total 60)
 const RENTALS_COLLECTION = 'rentals';
@@ -223,6 +224,8 @@ export async function createRental(
     `교시: ${data.period}, 승인: ${data.approver}, 수령학생: ${newRental.studentRep}`
   );
 
+  triggerAutoBackupIfNeeded(operator, `신규 대여 등록 (${data.teacherName} / ${data.gradeClass})`).catch(() => {});
+
   return newRental;
 }
 
@@ -278,6 +281,8 @@ export async function returnRental(
       returnNotes ? `, 특이사항: ${returnNotes}` : ''
     }, 처리자: ${operator.email}`
   );
+
+  triggerAutoBackupIfNeeded(operator, `태블릿 반납 완료 (${rental.teacherName} / ${rental.gradeClass})`).catch(() => {});
 }
 
 export interface RentalUpdateInput {
@@ -394,6 +399,8 @@ export async function updateRentalRecord(
     `변경내역: [${changeDetails}], 수정자: ${operator.email}`
   );
 
+  triggerAutoBackupIfNeeded(operator, `대여·반납 정보 수정 (${updatedRental.teacherName} / ${updatedRental.gradeClass})`).catch(() => {});
+
   return updatedRental;
 }
 
@@ -421,5 +428,7 @@ export async function deleteRentalRecord(
     `${rental.teacherName} 선생님 (${rental.gradeClass}) ${rental.cartUsed} ${rental.quantity}대 기록 삭제`,
     `교시: ${rental.period}, 수령자: ${rental.studentRep}, 상태: ${rental.status}, 삭제자: ${operator.email}`
   );
+
+  triggerAutoBackupIfNeeded(operator, `대여 기록 삭제 (${rental.teacherName} / ${rental.gradeClass})`).catch(() => {});
 }
 

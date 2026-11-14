@@ -217,6 +217,46 @@
         }
       },
       "required": ["userId", "userEmail", "timestamp", "action", "summary"]
+    },
+    "Backup": {
+      "title": "Backup",
+      "description": "핵심 자산 데이터 백업 스냅샷 (보안 감사 로그 제외)",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "백업 고유 식별자"
+        },
+        "backupType": {
+          "type": "string",
+          "description": "백업 유형 (auto: 자동 순환 백업, manual: 수동 영구 스냅샷)",
+          "enum": ["auto", "manual"]
+        },
+        "createdAt": {
+          "type": "string",
+          "description": "백업 생성 일시 (ISO 형식)"
+        },
+        "createdBy": {
+          "type": "string",
+          "description": "백업 생성자 이메일"
+        },
+        "version": {
+          "type": "string",
+          "description": "앱 릴리즈 버전",
+          "maxLength": 40
+        },
+        "source": {
+          "type": "string",
+          "description": "백업 저장소 출처",
+          "maxLength": 50
+        },
+        "note": {
+          "type": "string",
+          "description": "백업 설명 메모",
+          "maxLength": 200
+        }
+      },
+      "required": ["id", "backupType", "createdAt", "createdBy", "version", "counts", "data"]
     }
   },
   "firestore": {
@@ -239,6 +279,10 @@
     "/audit_logs/{logId}": {
       "schema": "AuditLog",
       "description": "감사 로그 및 변경 이력 추적 컬렉션"
+    },
+    "/backups/{backupId}": {
+      "schema": "Backup",
+      "description": "자동 순환 백업(auto) 및 수동 영구 스냅샷(manual) 저장소"
     }
   }
 }

@@ -12,6 +12,7 @@ import { db } from '../lib/firebase';
 import { WhitelistUser } from '../types';
 import { createAuditLog } from './auditService';
 import { BUILTIN_ADMIN_EMAILS, isBuiltinAdmin, SUPER_ADMIN_EMAIL } from './authService';
+import { triggerAutoBackupIfNeeded } from './backupService';
 
 const WHITELIST_COLLECTION = 'whitelist';
 const LOCAL_STORAGE_WHITELIST_KEY = 'tabzone_whitelist_cache';
@@ -147,6 +148,8 @@ export async function addWhitelistUser(
     `교직원 계정 등록 (${userData.name} / ${userData.email})`,
     `권한: ${userData.role}, 부서: ${userData.department}`
   );
+
+  triggerAutoBackupIfNeeded(operator, `화이트리스트 등록 (${userData.name})`).catch(() => {});
 }
 
 /**
@@ -185,4 +188,6 @@ export async function removeWhitelistUser(
     `교직원 계정 접근 권한 해제 (${normalizedEmail})`,
     `삭제 실행자: ${operator.email}`
   );
+
+  triggerAutoBackupIfNeeded(operator, `화이트리스트 삭제 (${normalizedEmail})`).catch(() => {});
 }
