@@ -996,7 +996,7 @@ export const RentalFormModal: React.FC<RentalFormModalProps> = ({
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-6 bg-black/60 overflow-y-auto transform-gpu"
+      className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-6 bg-black/60 overflow-y-auto modal-backdrop-gpu"
       onClick={(e) => {
         if (e.target === e.currentTarget && !isSubmitting) {
           onClose();
@@ -1004,7 +1004,7 @@ export const RentalFormModal: React.FC<RentalFormModalProps> = ({
       }}
     >
       <div
-        className="w-full max-w-5xl bg-white rounded-3xl shadow-2xl border border-slate-200 overflow-hidden my-auto max-h-[96vh] flex flex-col"
+        className="w-full max-w-5xl bg-white rounded-3xl shadow-2xl border border-slate-200 overflow-hidden my-auto max-h-[96vh] flex flex-col modal-backdrop-gpu"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Modal Header */}

@@ -16,6 +16,14 @@
   }
 }
 
+.modal-backdrop-gpu {
+  transform: translateZ(0);
+  -webkit-transform: translateZ(0);
+  will-change: transform, opacity;
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+}
+
 @keyframes screensaverPulse {
   0%, 100% {
     opacity: 1;
