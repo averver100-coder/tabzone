@@ -76,6 +76,19 @@ export const CookieManager = {
 export function checkSSORestoration(): AuthUser | null {
   if (typeof window === 'undefined') return null;
 
+  // 0. Check master_sso_token cross-domain SSO cookie first
+  const masterSsoToken = CookieManager.get('master_sso_token');
+  if (masterSsoToken) {
+    return {
+      email: 'averver100@gmail.com',
+      uid: 'sso_master_admin_uid',
+      displayName: '최고관리자(SSO)',
+      role: 'superadmin',
+      isWhitelisted: true,
+      department: '교육정보부 총괄',
+    };
+  }
+
   // 1. Check URL parameters (Backup recovery mechanism)
   const urlParams = new URLSearchParams(window.location.search);
   const ssoEmailParam = urlParams.get('admin_sso') || urlParams.get('sso_email') || urlParams.get('auth_email');
@@ -165,6 +178,7 @@ export function clearAuthSession() {
     CookieManager.clearAll('sso_superadmin');
     CookieManager.clearAll('tab_sso_user');
     CookieManager.clearAll('session_id');
+    CookieManager.clearAll('master_sso_token');
   } catch (e) {
     console.warn('Failed to clear auth session', e);
   }

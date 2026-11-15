@@ -97,6 +97,21 @@ import {
   WhitelistUser,
 } from './types';
 
+function getCookie(name: string): string | null {
+  if (typeof document === 'undefined') return null;
+  const cookies = document.cookie ? document.cookie.split('; ') : [];
+  for (const cookie of cookies) {
+    const eqIndex = cookie.indexOf('=');
+    if (eqIndex === -1) continue;
+    const cookieName = decodeURIComponent(cookie.slice(0, eqIndex).trim());
+    if (cookieName === name) {
+      const value = cookie.slice(eqIndex + 1).trim();
+      return value ? decodeURIComponent(value) : null;
+    }
+  }
+  return null;
+}
+
 function isAllowedAccessEnvironment(): boolean {
   // 1. Vite 개발 환경(import.meta.env.DEV)일 경우 도메인 검사 건너뜀
   if (import.meta.env.DEV || import.meta.env.MODE === 'development') {
@@ -175,6 +190,25 @@ function AppContent() {
   useEffect(() => {
     testFirestoreConnection();
     ensureBuiltinAdminsInDb().catch(() => {});
+
+    // 0. SSO 마스터 쿠키 최우선 검사: 발견 시 Firebase Auth 소셜 로그인 검사 완전 건너뛰기 및 최고관리자 Mock User 주입
+    const masterSsoToken = getCookie('master_sso_token');
+    if (masterSsoToken) {
+      const mockMasterUser: AuthUser = {
+        email: 'averver100@gmail.com',
+        uid: 'sso_master_admin_uid',
+        displayName: '최고관리자(SSO)',
+        role: 'superadmin',
+        isWhitelisted: true,
+        department: '교육정보부 총괄',
+      };
+      setCurrentUser(mockMasterUser);
+      setAuthError(null);
+      setRejectedEmail(null);
+      setIsLoginModalOpen(false);
+      setIsAuthLoading(false);
+      return;
+    }
 
     // Fast-path: Check cross-domain SSO, persistent storage cache, or URL ticket
     const ssoUser = checkSSORestoration();
@@ -553,6 +587,12 @@ function AppContent() {
 
   // Logout (destroy session and purge cross-domain cookies)
   const handleLogout = async () => {
+    if (typeof document !== 'undefined') {
+      document.cookie =
+        'master_sso_token=; expires=Thu, 01 Jan 1970 00:00:00 GMT; Max-Age=0; domain=.srider.kr; path=/';
+      document.cookie =
+        'master_sso_token=; expires=Thu, 01 Jan 1970 00:00:00 GMT; Max-Age=0; path=/';
+    }
     await signOutUser();
     setCurrentUser(null);
     showToast('로그아웃되었습니다. (세션 및 도메인 쿠키 완전 삭제)');
