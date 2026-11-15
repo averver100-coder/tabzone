@@ -69,19 +69,19 @@ export const PWAInstallButton: React.FC<PWAInstallButtonProps> = ({
 
     return (
       <div
-        className={`inline-flex items-center gap-1.5 h-11 sm:h-12 px-3 sm:px-3.5 rounded-2xl bg-emerald-50 text-emerald-700 text-xs sm:text-sm font-bold border border-emerald-200 select-none shrink-0 ${className}`}
+        className={`inline-flex items-center gap-1.5 h-10 sm:h-11 px-2.5 sm:px-3 rounded-2xl bg-emerald-50 text-emerald-700 text-xs font-bold border border-emerald-200 select-none shrink-0 ${className}`}
         title="PWA 단독 앱으로 실행 중입니다."
       >
-        <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
-        <span className="hidden sm:inline">PWA 앱 구동 중</span>
-        <span className="sm:hidden">앱 구동 중</span>
+        <CheckCircle2 className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-emerald-600 shrink-0" />
+        <span className="hidden sm:inline">PWA 앱</span>
+        <span className="sm:hidden">앱</span>
       </div>
     );
   }
 
   // 앱 설치 버튼
   return (
-    <div className="relative inline-flex">
+    <div className="relative inline-flex shrink-0">
       {fullWidth ? (
         <button
           id="pwa-install-btn"
@@ -97,11 +97,12 @@ export const PWAInstallButton: React.FC<PWAInstallButtonProps> = ({
           id="pwa-install-btn"
           type="button"
           onClick={handleInstallClick}
-          className={`inline-flex items-center gap-2 h-11 sm:h-12 px-3.5 sm:px-4 rounded-2xl bg-gradient-to-r from-blue-600 via-indigo-600 to-blue-700 hover:from-blue-700 hover:to-indigo-700 active:scale-95 text-white text-xs sm:text-sm font-black shadow-md shadow-blue-500/25 border border-white/20 transition-all cursor-pointer duration-200 select-none shrink-0 ${className}`}
+          className={`inline-flex items-center gap-1.5 h-10 sm:h-11 px-2.5 sm:px-3.5 rounded-2xl bg-gradient-to-r from-blue-600 via-indigo-600 to-blue-700 hover:from-blue-700 hover:to-indigo-700 active:scale-95 text-white text-xs font-black shadow-md shadow-blue-500/25 border border-white/20 transition-all cursor-pointer duration-200 select-none shrink-0 ${className}`}
           title="바탕화면 및 모바일 홈 화면에 앱 설치"
         >
-          <Download className="w-4 h-4 shrink-0" />
-          <span className="tracking-tight whitespace-nowrap">앱 설치 (PC/모바일)</span>
+          <Download className="w-3.5 h-3.5 sm:w-4 sm:h-4 shrink-0" />
+          <span className="tracking-tight whitespace-nowrap hidden 2xl:inline">앱 설치 (PC/모바일)</span>
+          <span className="tracking-tight whitespace-nowrap 2xl:hidden">앱 설치</span>
         </button>
       )}
 

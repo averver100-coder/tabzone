@@ -805,11 +805,7 @@ function AppContent() {
         onOpenLogin={() => setIsLoginModalOpen(true)}
         onOpenWhitelist={() => setIsWhitelistModalOpen(true)}
         onOpenAuditLogs={() => setIsAuditLogsModalOpen(true)}
-        onOpenAnalytics={() => setIsAnalyticsModalOpen(true)}
         onLogout={handleLogout}
-        
-        
-        onOpenRentalModal={() => setIsRentalModalOpen(true)}
         onTriggerScreensaver={() => setIsIdle(true)}
       />
 

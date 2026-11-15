@@ -1,12 +1,10 @@
 import {
-  BarChart3,
   Clock,
   FileText,
   KeyRound,
   LogOut,
   Maximize2,
   Minimize2,
-  Plus,
   ShieldCheck,
   UserCheck,
 } from 'lucide-react';
@@ -20,11 +18,7 @@ interface HeaderProps {
   onOpenLogin: () => void;
   onOpenWhitelist: () => void;
   onOpenAuditLogs: () => void;
-  onOpenAnalytics?: () => void;
   onLogout: () => void;
-
-
-  onOpenRentalModal?: () => void;
   onTriggerScreensaver?: () => void;
 }
 
@@ -33,11 +27,7 @@ export const Header: React.FC<HeaderProps> = ({
   onOpenLogin,
   onOpenWhitelist,
   onOpenAuditLogs,
-  onOpenAnalytics,
   onLogout,
-
-
-  onOpenRentalModal,
   onTriggerScreensaver,
 }) => {
   const [currentTime, setCurrentTime] = useState<string>('');
@@ -91,28 +81,28 @@ export const Header: React.FC<HeaderProps> = ({
   };
 
   return (
-    <header className="sticky top-0 z-40 bg-white border-b border-slate-200 shadow-xs">
-      <div className="max-w-[1440px] mx-auto px-4 sm:px-6 lg:px-8 py-3 flex items-center justify-between gap-3 sm:gap-4">
+    <header className="sticky top-0 z-40 w-full bg-white border-b border-slate-200 shadow-xs overflow-x-clip">
+      <div className="max-w-[1440px] w-full mx-auto px-4 sm:px-6 lg:px-8 py-2.5 flex flex-wrap items-center justify-between gap-2 lg:gap-3">
         {/* Brand & School Logo */}
-        <div className="flex items-center gap-3 shrink-0">
+        <div className="flex items-center gap-2.5 min-w-0 shrink-0">
           <div
             onClick={onTriggerScreensaver}
-            className="relative group cursor-pointer"
+            className="relative group cursor-pointer shrink-0"
             title="대기(Splash) 화면 전환"
             role="button"
             tabIndex={0}
           >
-            <TabZoneLogo className="w-11 h-11 sm:w-12 sm:h-12 transition-transform group-hover:scale-105" />
+            <TabZoneLogo className="w-10 h-10 sm:w-11 sm:h-11 transition-transform group-hover:scale-105" />
           </div>
 
-          <div className="shrink-0">
-            <div className="flex items-center gap-2">
-              <h1 className="text-xl sm:text-2xl font-black tracking-tight text-slate-900 flex items-center gap-1.5 whitespace-nowrap">
+          <div className="min-w-0">
+            <div className="flex items-center gap-1.5">
+              <h1 className="text-lg sm:text-xl font-black tracking-tight text-slate-900 flex items-center gap-1.5 whitespace-nowrap">
                 <span>탭존</span>
-                <span className="text-blue-600 text-lg sm:text-xl font-bold">TabZone</span>
+                <span className="text-blue-600 text-base sm:text-lg font-bold">TabZone</span>
               </h1>
             </div>
-            <p className="text-xs text-slate-500 font-medium hidden xl:block whitespace-nowrap">
+            <p className="text-xs text-slate-500 font-medium hidden 2xl:block whitespace-nowrap">
               교내 스마트 태블릿 통합 대여·반납 관리 시스템
             </p>
           </div>
@@ -120,73 +110,47 @@ export const Header: React.FC<HeaderProps> = ({
 
         {/* Center Clock & Status Indicator (그라데이션 버튼 디자인) */}
         <div
-          className={`flex items-center gap-2 sm:gap-2.5 px-3.5 sm:px-4 py-2 rounded-2xl shrink-0 ${
-'bg-gradient-to-r from-blue-600 via-indigo-600 to-violet-600 shadow-md shadow-indigo-600/20 text-white'
-          } border border-white/20 select-none transition-all duration-300`}
+          className="flex items-center gap-2 px-3 py-1.5 sm:py-2 rounded-2xl shrink-0 bg-gradient-to-r from-blue-600 via-indigo-600 to-violet-600 shadow-md shadow-indigo-600/20 text-white border border-white/20 select-none transition-all duration-300"
         >
           <div className="w-5 h-5 rounded-lg bg-white/20 flex items-center justify-center backdrop-blur-xs shrink-0">
             <Clock className="w-3.5 h-3.5 text-white" />
           </div>
-          <span className="text-xs sm:text-sm font-black tracking-tight text-white/95 whitespace-nowrap font-mono">
+          <span className="text-xs font-black tracking-tight text-white/95 whitespace-nowrap font-mono">
             {currentTime || '시각 동기화 중...'}
           </span>
-          <span className="px-2 py-0.5 rounded-full bg-white/20 text-white text-[10px] sm:text-[11px] font-bold whitespace-nowrap">
+          <span className="hidden sm:inline-block px-1.5 py-0.5 rounded-full bg-white/20 text-white text-[10px] font-bold whitespace-nowrap">
             LIVE
           </span>
         </div>
 
         {/* Action Controls & User Account */}
-        <div className="flex items-center gap-2 sm:gap-2.5 shrink-0">
-          {onOpenRentalModal && (
-            <button
-              type="button"
-              onClick={onOpenRentalModal}
-              className="flex items-center gap-1.5 h-11 sm:h-12 px-3.5 sm:px-4 rounded-2xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 active:scale-95 text-white text-xs sm:text-sm font-black shadow-md shadow-blue-600/20 transition cursor-pointer shrink-0 whitespace-nowrap"
-            >
-              <Plus className="w-4 h-4 stroke-[3]" />
-              <span>태블릿 대여</span>
-            </button>
-          )}
-
+        <div className="flex flex-wrap items-center justify-end gap-1.5 sm:gap-2 min-w-0 max-w-full ml-auto">
           {/* Hide PWA install button in fullscreen / kiosk mode */}
           {!isFullscreen && <PWAInstallButton />}
 
-          {/* Fullscreen kiosk button (Touch target 48px) */}
+          {/* Fullscreen kiosk button */}
           <button
             type="button"
             onClick={toggleFullscreen}
-            className="w-11 h-11 sm:w-12 sm:h-12 rounded-2xl bg-slate-100 hover:bg-slate-200 active:scale-95 text-slate-700 flex items-center justify-center transition cursor-pointer border border-slate-200/80 shadow-xs shrink-0"
+            className="w-10 h-10 sm:w-11 sm:h-11 rounded-2xl bg-slate-100 hover:bg-slate-200 active:scale-95 text-slate-700 flex items-center justify-center transition cursor-pointer border border-slate-200/80 shadow-xs shrink-0"
             title={isFullscreen ? '창 모드로 복귀' : '태블릿 전체화면 키오스크 모드'}
             aria-label="전체화면 모드"
           >
-            {isFullscreen ? <Minimize2 className="w-5 h-5" /> : <Maximize2 className="w-5 h-5" />}
+            {isFullscreen ? <Minimize2 className="w-4 h-4 sm:w-5 sm:h-5" /> : <Maximize2 className="w-4 h-4 sm:w-5 sm:h-5" />}
           </button>
 
           {currentUser ? (
-            <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
+            <div className="flex flex-wrap items-center justify-end gap-1.5 sm:gap-2 min-w-0">
               {/* Master Management Menu Button (Admins & Superadmin) */}
               {(currentUser.role === 'admin' || currentUser.role === 'superadmin') && (
                 <button
                   type="button"
                   onClick={onOpenWhitelist}
-                  className="flex items-center gap-1.5 sm:gap-2 h-11 sm:h-12 px-3 sm:px-3.5 rounded-2xl bg-purple-50 hover:bg-purple-100 active:scale-95 text-purple-700 text-xs sm:text-sm font-bold border border-purple-200 transition cursor-pointer shadow-xs shrink-0 whitespace-nowrap"
+                  className="flex items-center gap-1.5 h-10 sm:h-11 px-2.5 sm:px-3 rounded-2xl bg-purple-50 hover:bg-purple-100 active:scale-95 text-purple-700 text-xs font-bold border border-purple-200 transition cursor-pointer shadow-xs shrink-0 whitespace-nowrap"
                   title="대여·반납 내역 수정 / 대여 승인자 / 담당 교사 / 화이트리스트 관리"
                 >
-                  <KeyRound className="w-4 h-4 shrink-0" />
+                  <KeyRound className="w-3.5 h-3.5 sm:w-4 sm:h-4 shrink-0" />
                   <span className="whitespace-nowrap">마스터관리</span>
-                </button>
-              )}
-
-              {/* Superadmin Analytics Button */}
-              {currentUser.role === 'superadmin' && onOpenAnalytics && (
-                <button
-                  type="button"
-                  onClick={onOpenAnalytics}
-                  className="flex items-center gap-1.5 sm:gap-2 h-11 sm:h-12 px-3 sm:px-3.5 rounded-2xl bg-indigo-50 hover:bg-indigo-100 active:scale-95 text-indigo-700 text-xs sm:text-sm font-bold border border-indigo-200 transition cursor-pointer shadow-xs shrink-0 whitespace-nowrap"
-                  title="요일별·시간대별 대여 빈도 통계 및 엑셀 데이터 추출 (슈퍼관리자 전용)"
-                >
-                  <BarChart3 className="w-4 h-4 shrink-0 text-indigo-600" />
-                  <span className="whitespace-nowrap">대여분석</span>
                 </button>
               )}
 
@@ -195,31 +159,31 @@ export const Header: React.FC<HeaderProps> = ({
                 <button
                   type="button"
                   onClick={onOpenAuditLogs}
-                  className="flex items-center gap-1.5 sm:gap-2 h-11 sm:h-12 px-3 sm:px-3.5 rounded-2xl bg-slate-100 hover:bg-slate-200 active:scale-95 text-slate-700 text-xs sm:text-sm font-bold border border-slate-300 transition cursor-pointer shadow-xs shrink-0 whitespace-nowrap"
+                  className="flex items-center gap-1.5 h-10 sm:h-11 px-2.5 sm:px-3 rounded-2xl bg-slate-100 hover:bg-slate-200 active:scale-95 text-slate-700 text-xs font-bold border border-slate-300 transition cursor-pointer shadow-xs shrink-0 whitespace-nowrap"
                   title="감사 로그 및 변경 이력"
                 >
-                  <FileText className="w-4 h-4 shrink-0" />
+                  <FileText className="w-3.5 h-3.5 sm:w-4 sm:h-4 shrink-0" />
                   <span className="whitespace-nowrap">감사로그</span>
                 </button>
               )}
 
               {/* User badge */}
-              <div className="flex items-center gap-2 pl-2 border-l border-slate-200 shrink-0">
-                <div className="text-right hidden md:block">
+              <div className="flex items-center gap-1.5 sm:gap-2 pl-1.5 sm:pl-2 border-l border-slate-200 shrink-0">
+                <div className="text-right hidden xl:block">
                   <div className="text-xs font-bold text-slate-800 flex items-center justify-end gap-1 whitespace-nowrap">
                     {currentUser.role === 'superadmin' ? (
                       <span className="inline-flex items-center gap-1 text-purple-700 whitespace-nowrap">
-                        <ShieldCheck className="w-4 h-4 shrink-0" />
+                        <ShieldCheck className="w-3.5 h-3.5 shrink-0" />
                         슈퍼관리자
                       </span>
                     ) : (
                       <span className="inline-flex items-center gap-1 text-blue-700 whitespace-nowrap">
-                        <UserCheck className="w-4 h-4 shrink-0" />
+                        <UserCheck className="w-3.5 h-3.5 shrink-0" />
                         관리교사
                       </span>
                     )}
                   </div>
-                  <div className="text-xs text-slate-500 font-mono truncate max-w-[120px] sm:max-w-[140px] whitespace-nowrap">
+                  <div className="text-[11px] text-slate-500 font-mono truncate max-w-[130px] whitespace-nowrap">
                     {currentUser.email}
                   </div>
                 </div>
@@ -227,11 +191,11 @@ export const Header: React.FC<HeaderProps> = ({
                 <button
                   type="button"
                   onClick={onLogout}
-                  className="w-11 h-11 sm:w-12 sm:h-12 rounded-2xl bg-rose-50 hover:bg-rose-100 active:scale-95 text-rose-600 flex items-center justify-center transition cursor-pointer border border-rose-200 shadow-xs shrink-0"
+                  className="w-10 h-10 sm:w-11 sm:h-11 rounded-2xl bg-rose-50 hover:bg-rose-100 active:scale-95 text-rose-600 flex items-center justify-center transition cursor-pointer border border-rose-200 shadow-xs shrink-0"
                   title="로그아웃 (세션 및 쿠키 파기)"
                   aria-label="로그아웃"
                 >
-                  <LogOut className="w-5 h-5" />
+                  <LogOut className="w-4 h-4 sm:w-5 sm:h-5" />
                 </button>
               </div>
             </div>

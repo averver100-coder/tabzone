@@ -1,3 +1,4 @@
+import crypto from 'crypto';
 import fs from 'fs';
 import tailwindcss from '@tailwindcss/vite';
 import react from '@vitejs/plugin-react';
@@ -11,6 +12,7 @@ interface VersionInfo {
   patchStr: string;
   version: string;
   buildId: string;
+  sourceHash: string;
 }
 
 function getKstDateString(): string {
@@ -33,6 +35,37 @@ function parseStoredVersion(rawVersion?: string | null): { date: string; patch: 
   };
 }
 
+function collectFilesRecursively(dir: string, out: string[] = []): string[] {
+  if (!fs.existsSync(dir)) return out;
+  const entries = fs.readdirSync(dir, { withFileTypes: true }).sort((a, b) => a.name.localeCompare(b.name));
+  for (const entry of entries) {
+    if (entry.name.startsWith('.') || entry.name === 'node_modules' || entry.name === 'dist') continue;
+    const fullPath = path.join(dir, entry.name);
+    if (entry.isDirectory()) {
+      collectFilesRecursively(fullPath, out);
+    } else if (entry.isFile()) {
+      out.push(fullPath);
+    }
+  }
+  return out;
+}
+
+function computeSourceHash(root: string): string {
+  const hash = crypto.createHash('sha256');
+  const targets = [
+    ...collectFilesRecursively(path.resolve(root, 'src')),
+    path.resolve(root, 'index.html'),
+    path.resolve(root, 'package.json'),
+  ];
+  for (const filePath of targets) {
+    if (!fs.existsSync(filePath)) continue;
+    const rel = path.relative(root, filePath).replace(/\\/g, '/');
+    hash.update(rel);
+    hash.update(fs.readFileSync(filePath));
+  }
+  return hash.digest('hex').slice(0, 16);
+}
+
 let cachedBuildVersionInfo: VersionInfo | null = null;
 
 function resolveVersionInfo(command: 'build' | 'serve'): VersionInfo {
@@ -43,12 +76,15 @@ function resolveVersionInfo(command: 'build' | 'serve'): VersionInfo {
   const root = typeof __dirname !== 'undefined' ? __dirname : process.cwd();
   const vPath = path.resolve(root, 'public', 'version.json');
   const todayKst = getKstDateString();
+  const currentSourceHash = computeSourceHash(root);
 
   let existing: { date: string; patch: number; hasPatch: boolean } | null = null;
+  let existingSourceHash: string | null = null;
   try {
     if (fs.existsSync(vPath)) {
       const content = JSON.parse(fs.readFileSync(vPath, 'utf-8'));
       existing = parseStoredVersion(content?.version);
+      existingSourceHash = typeof content?.sourceHash === 'string' ? content.sourceHash : null;
     }
   } catch (e) {
     console.debug('Failed to read existing version.json:', e);
@@ -58,14 +94,18 @@ function resolveVersionInfo(command: 'build' | 'serve'): VersionInfo {
   if (command === 'build') {
     // 배포(빌드) 시: 오늘 날짜가 같으면 패치 번호 +1 자동 증가, 날짜가 바뀌면 01로 초기화
     if (existing && existing.date === todayKst) {
-      nextPatch = existing.patch + 1;
+      nextPatch = Math.max(existing.patch, 0) + 1;
     } else {
       nextPatch = 1;
     }
   } else {
-    // 개발 서버(serve) 실행 시: 오늘 날짜의 유효한 패치 버전이 있으면 유지하고, 날짜 변경/미설정 시 01로 초기화
+    // 개발 서버(serve) 실행 시: 오늘 날짜 유지, 소스 코드 해시가 변경된 경우 자동으로 +1 증가
     if (existing && existing.date === todayKst && existing.hasPatch && existing.patch >= 1) {
-      nextPatch = existing.patch;
+      if (existingSourceHash && existingSourceHash !== currentSourceHash) {
+        nextPatch = existing.patch + 1;
+      } else {
+        nextPatch = existing.patch;
+      }
     } else {
       nextPatch = 1;
     }
@@ -81,6 +121,7 @@ function resolveVersionInfo(command: 'build' | 'serve'): VersionInfo {
     patchStr,
     version,
     buildId,
+    sourceHash: currentSourceHash,
   };
 
   return cachedBuildVersionInfo;
@@ -97,6 +138,22 @@ function versionJsonPlugin(versionInfo: VersionInfo) {
           fs.mkdirSync(publicDir, { recursive: true });
         }
         const vPath = path.resolve(publicDir, 'version.json');
+
+        // 디스크에 이미 동일 날짜의 더 높은 패치 버전이 기록되어 있으면 절대 하위 버전으로 덮어쓰지 않음
+        if (fs.existsSync(vPath)) {
+          try {
+            const diskContent = JSON.parse(fs.readFileSync(vPath, 'utf-8'));
+            const diskParsed = parseStoredVersion(diskContent?.version);
+            if (
+              diskParsed &&
+              diskParsed.date === versionInfo.buildDate &&
+              diskParsed.patch > versionInfo.patchNum
+            ) {
+              return;
+            }
+          } catch {}
+        }
+
         fs.writeFileSync(
           vPath,
           JSON.stringify(
@@ -105,6 +162,7 @@ function versionJsonPlugin(versionInfo: VersionInfo) {
               buildDate: versionInfo.buildDate,
               patch: versionInfo.patchNum,
               buildId: versionInfo.buildId,
+              sourceHash: versionInfo.sourceHash,
               updatedAt: new Date().toISOString(),
             },
             null,

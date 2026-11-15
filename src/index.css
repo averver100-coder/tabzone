@@ -4,6 +4,7 @@
   html, body {
     background-color: #f8fafc;
     color: #0f172a;
+    overflow-x: clip;
     touch-action: manipulation;
     -webkit-tap-highlight-color: transparent;
     user-select: none;
