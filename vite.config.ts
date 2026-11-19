@@ -177,6 +177,24 @@ function versionJsonPlugin(versionInfo: VersionInfo) {
   };
 }
 
+function dedupeManifestLinkPlugin() {
+  return {
+    name: 'dedupe-manifest-link',
+    enforce: 'post' as const,
+    transformIndexHtml: {
+      order: 'post' as const,
+      handler(html: string) {
+        let seen = false;
+        return html.replace(/<link\b[^>]*\brel=["']manifest["'][^>]*\/?>/gi, (match) => {
+          if (seen) return '';
+          seen = true;
+          return match;
+        });
+      },
+    },
+  };
+}
+
 export default defineConfig(({ command }) => {
   const versionInfo = resolveVersionInfo(command);
 
@@ -196,7 +214,8 @@ export default defineConfig(({ command }) => {
       VitePWA({
         registerType: 'prompt',
         injectRegister: 'auto',
-        includeAssets: ['favicon.ico', 'apple-touch-icon.png', 'icon.svg', 'pwa-192x192.png', 'pwa-512x512.png'],
+        manifestFilename: 'manifest.webmanifest',
+        includeAssets: ['tab-logo.png'],
         manifest: {
           id: '/',
           name: '탭존 (TabZone) - 스마트 태블릿 대여 관리',
@@ -213,26 +232,8 @@ export default defineConfig(({ command }) => {
           scope: '/',
           icons: [
             {
-              src: '/pwa-192x192.png',
-              sizes: '192x192',
-              type: 'image/png',
-              purpose: 'any',
-            },
-            {
-              src: '/pwa-512x512.png',
+              src: '/tab-logo.png?v=2',
               sizes: '512x512',
-              type: 'image/png',
-              purpose: 'any',
-            },
-            {
-              src: '/pwa-maskable-512x512.png',
-              sizes: '512x512',
-              type: 'image/png',
-              purpose: 'maskable',
-            },
-            {
-              src: '/apple-touch-icon.png',
-              sizes: '180x180',
               type: 'image/png',
               purpose: 'any',
             },
@@ -287,6 +288,7 @@ export default defineConfig(({ command }) => {
           type: 'module',
         },
       }),
+      dedupeManifestLinkPlugin(),
     ],
     resolve: {
       alias: {
