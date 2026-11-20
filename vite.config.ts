@@ -12,6 +12,7 @@ interface VersionInfo {
   patchStr: string;
   version: string;
   buildId: string;
+  cacheName: string;
   sourceHash: string;
 }
 
@@ -90,47 +91,59 @@ function resolveVersionInfo(command: 'build' | 'serve'): VersionInfo {
     console.debug('Failed to read existing version.json:', e);
   }
 
+  let buildDate = todayKst;
   let nextPatch = 1;
+
   if (command === 'build') {
-    // 배포(빌드) 시: 오늘 날짜가 같으면 패치 번호 +1 자동 증가, 날짜가 바뀌면 01로 초기화
-    if (existing && existing.date === todayKst) {
-      nextPatch = Math.max(existing.patch, 0) + 1;
-    } else {
-      nextPatch = 1;
-    }
-  } else {
-    // 개발 서버(serve) 실행 시: 오늘 날짜 유지, 소스 코드 해시가 변경된 경우 자동으로 +1 증가
     if (existing && existing.date === todayKst && existing.hasPatch && existing.patch >= 1) {
+      // 오늘 날짜에 이미 명시적으로 기록된 버전이 있고,
+      // 이전 빌드 해시와 실제 소스 변경이 감지된 경우에만 +1 증가 (중복 증가 방지)
       if (existingSourceHash && existingSourceHash !== currentSourceHash) {
         nextPatch = existing.patch + 1;
       } else {
         nextPatch = existing.patch;
       }
     } else {
+      // 날짜가 바뀌어 오늘 처음 빌드하는 경우 무조건 01부터 시작
+      buildDate = todayKst;
+      nextPatch = 1;
+    }
+  } else {
+    // 개발 서버(serve) 기동 시에는 public/version.json의 버전을 임의로 덮어쓰거나 선차감(.01 소모)하지 않고 그대로 사용
+    if (existing && existing.hasPatch && existing.patch >= 1) {
+      buildDate = existing.date;
+      nextPatch = existing.patch;
+    } else {
+      buildDate = todayKst;
       nextPatch = 1;
     }
   }
 
   const patchStr = String(nextPatch).padStart(2, '0');
-  const version = `V${todayKst}.${patchStr}`;
+  const version = `V${buildDate}.${patchStr}`;
   const buildId = `tabzone-${version}`;
+  const cacheName = `tabzone-cache-${version}`;
 
   cachedBuildVersionInfo = {
-    buildDate: todayKst,
+    buildDate,
     patchNum: nextPatch,
     patchStr,
     version,
     buildId,
+    cacheName,
     sourceHash: currentSourceHash,
   };
 
   return cachedBuildVersionInfo;
 }
 
-function versionJsonPlugin(versionInfo: VersionInfo) {
+function versionJsonPlugin(versionInfo: VersionInfo, command: 'build' | 'serve') {
   return {
     name: 'version-json-sync',
     buildStart() {
+      // 개발 서버 실행(serve) 시에는 version.json을 임의로 덮어쓰지 않아 빌드 버전과 충돌 방지
+      if (command !== 'build') return;
+
       try {
         const root = typeof __dirname !== 'undefined' ? __dirname : process.cwd();
         const publicDir = path.resolve(root, 'public');
@@ -138,21 +151,6 @@ function versionJsonPlugin(versionInfo: VersionInfo) {
           fs.mkdirSync(publicDir, { recursive: true });
         }
         const vPath = path.resolve(publicDir, 'version.json');
-
-        // 디스크에 이미 동일 날짜의 더 높은 패치 버전이 기록되어 있으면 절대 하위 버전으로 덮어쓰지 않음
-        if (fs.existsSync(vPath)) {
-          try {
-            const diskContent = JSON.parse(fs.readFileSync(vPath, 'utf-8'));
-            const diskParsed = parseStoredVersion(diskContent?.version);
-            if (
-              diskParsed &&
-              diskParsed.date === versionInfo.buildDate &&
-              diskParsed.patch > versionInfo.patchNum
-            ) {
-              return;
-            }
-          } catch {}
-        }
 
         fs.writeFileSync(
           vPath,
@@ -162,6 +160,7 @@ function versionJsonPlugin(versionInfo: VersionInfo) {
               buildDate: versionInfo.buildDate,
               patch: versionInfo.patchNum,
               buildId: versionInfo.buildId,
+              cacheName: versionInfo.cacheName,
               sourceHash: versionInfo.sourceHash,
               updatedAt: new Date().toISOString(),
             },
@@ -170,8 +169,20 @@ function versionJsonPlugin(versionInfo: VersionInfo) {
           ),
           'utf-8'
         );
+
+        // Service Worker(sw-waf-guard.js)의 APP_VERSION 및 CACHE_NAME 동기화
+        const swGuardPath = path.resolve(publicDir, 'sw-waf-guard.js');
+        if (fs.existsSync(swGuardPath)) {
+          const swContent = fs.readFileSync(swGuardPath, 'utf-8');
+          const updatedSwContent = swContent
+            .replace(/const APP_VERSION = ['"][^'"]+['"];/, `const APP_VERSION = '${versionInfo.version}';`)
+            .replace(/const CACHE_NAME = ['"][^'"]+['"];/, `const CACHE_NAME = '${versionInfo.cacheName}';`);
+          if (updatedSwContent !== swContent) {
+            fs.writeFileSync(swGuardPath, updatedSwContent, 'utf-8');
+          }
+        }
       } catch (e) {
-        console.debug('Failed to sync version.json:', e);
+        console.debug('Failed to sync version.json / sw-waf-guard.js:', e);
       }
     },
   };
@@ -208,7 +219,7 @@ export default defineConfig(({ command }) => {
       'import.meta.env.VITE_BUILD_ID': JSON.stringify(versionInfo.buildId),
     },
     plugins: [
-      versionJsonPlugin(versionInfo),
+      versionJsonPlugin(versionInfo, command),
       react(),
       tailwindcss(),
       VitePWA({
@@ -240,6 +251,7 @@ export default defineConfig(({ command }) => {
           ],
         },
         workbox: {
+          cacheId: versionInfo.cacheName,
           maximumFileSizeToCacheInBytes: 6 * 1024 * 1024,
           cleanupOutdatedCaches: true,
           clientsClaim: true,
@@ -252,7 +264,7 @@ export default defineConfig(({ command }) => {
               urlPattern: ({ request }) => request.mode === 'navigate',
               handler: 'NetworkFirst',
               options: {
-                cacheName: 'tabzone-pages-network-first',
+                cacheName: `tabzone-pages-${versionInfo.version}`,
                 networkTimeoutSeconds: 5,
                 cacheableResponse: {
                   statuses: [200],
@@ -263,7 +275,7 @@ export default defineConfig(({ command }) => {
               urlPattern: ({ url }) => url.origin === self.location.origin,
               handler: 'NetworkFirst',
               options: {
-                cacheName: 'tabzone-assets-network-first',
+                cacheName: `tabzone-assets-${versionInfo.version}`,
                 networkTimeoutSeconds: 5,
                 cacheableResponse: {
                   statuses: [200],
@@ -274,7 +286,7 @@ export default defineConfig(({ command }) => {
               urlPattern: /^https:\/\/fonts\.(?:googleapis|gstatic)\.com\/.*/i,
               handler: 'NetworkFirst',
               options: {
-                cacheName: 'google-fonts-network-first',
+                cacheName: `google-fonts-${versionInfo.version}`,
                 networkTimeoutSeconds: 5,
                 cacheableResponse: {
                   statuses: [200],

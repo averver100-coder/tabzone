@@ -32,6 +32,7 @@ import { LoginModal } from './components/LoginModal';
 import { PWAUpdatePrompt } from './components/PWAUpdatePrompt';
 import { RentalFormModal } from './components/RentalFormModal';
 import { RentalList } from './components/RentalList';
+import { ScrollToTopButton } from './components/ScrollToTopButton';
 import { WhitelistModal } from './components/WhitelistModal';
 import { useIdleTimer } from './hooks/useIdleTimer';
 import { auth, testFirestoreConnection } from './lib/firebase';
@@ -1040,6 +1041,9 @@ function AppContent() {
         }}
         rentals={rentals}
       />
+
+      {/* Global Scroll-to-Top Floating Button (Main Page & Rental Tabs) */}
+      <ScrollToTopButton hidden={isAnyModalOpen || isIdle} />
     </div>
   );
 }

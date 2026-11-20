@@ -9,6 +9,9 @@
  *    never falls back to cached screens—renders "네트워크 접근이 거부되었습니다".
  */
 
+const APP_VERSION = 'V2026.11.20.03';
+const CACHE_NAME = 'tabzone-cache-V2026.11.20.03';
+
 const ACCESS_DENIED_HTML = `<!DOCTYPE html>
 <html lang="ko">
 <head>
@@ -66,7 +69,10 @@ self.addEventListener('activate', (event) => {
         const cacheNames = await caches.keys();
         await Promise.all(
           cacheNames.map((name) => {
-            // Delete all legacy workbox-precache or runtime caches to prevent stale offline rendering
+            // 이전 버전 캐시(CACHE_NAME 불일치) 및 레거시 캐시를 모두 무효화
+            if (name !== CACHE_NAME) {
+              return caches.delete(name);
+            }
             return caches.delete(name);
           })
         );

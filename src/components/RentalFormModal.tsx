@@ -17,6 +17,7 @@ import {
 } from 'lucide-react';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Approver, CartCapacity, CartType, Rental, Teacher } from '../types';
+import { ScrollToTopButton } from './ScrollToTopButton';
 
 interface RentalFormModalProps {
   isOpen: boolean;
@@ -721,6 +722,7 @@ export const RentalFormModal: React.FC<RentalFormModalProps> = ({
 
   // Track if studentRep was auto-filled so changing class can update it seamlessly
   const autoFilledRepRef = useRef<string | null>(null);
+  const scrollFormRef = useRef<HTMLFormElement | null>(null);
 
   useEffect(() => {
     if (isOpen) {
@@ -1030,7 +1032,8 @@ export const RentalFormModal: React.FC<RentalFormModalProps> = ({
         </div>
 
         {/* Modal Body */}
-        <form onSubmit={handleSubmit} className="p-5 sm:p-7 space-y-4 flex-1 overflow-y-auto flex flex-col justify-between">
+        <div className="relative flex-1 min-h-0 flex flex-col">
+          <form ref={scrollFormRef} onSubmit={handleSubmit} className="p-5 sm:p-7 space-y-4 flex-1 overflow-y-auto flex flex-col justify-between">
           {/* Missing Fields Error Alert Notice */}
           {missingFields.length > 0 && (
             <div className="p-3.5 rounded-2xl bg-rose-50 border border-rose-300 text-rose-900 space-y-1 shrink-0">
@@ -1150,7 +1153,9 @@ export const RentalFormModal: React.FC<RentalFormModalProps> = ({
               )}
             </button>
           </div>
-        </form>
+          </form>
+          <ScrollToTopButton containerRef={scrollFormRef} />
+        </div>
       </div>
     </div>
   );

@@ -16,8 +16,9 @@ import {
   Users,
   X,
 } from 'lucide-react';
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { Approver, Rental } from '../types';
+import { ScrollToTopButton } from './ScrollToTopButton';
 
 interface ReturnConfirmModalProps {
   isOpen: boolean;
@@ -53,6 +54,7 @@ export const ReturnConfirmModal: React.FC<ReturnConfirmModalProps> = ({
   const [customApproverName, setCustomApproverName] = useState<string>('');
   const [returnNotes, setReturnNotes] = useState<string>('');
   const [validationError, setValidationError] = useState<string | null>(null);
+  const scrollFormRef = useRef<HTMLFormElement | null>(null);
 
   // When modal opens with a rental, reset state
   useEffect(() => {
@@ -153,7 +155,8 @@ export const ReturnConfirmModal: React.FC<ReturnConfirmModalProps> = ({
         </div>
 
         {/* Form Container */}
-        <form onSubmit={handleSubmit} className="flex flex-col flex-1 overflow-y-auto">
+        <div className="relative flex-1 min-h-0 flex flex-col">
+          <form ref={scrollFormRef} onSubmit={handleSubmit} className="flex flex-col flex-1 overflow-y-auto">
           <div className="p-5 sm:p-6 space-y-4 sm:space-y-5">
             {/* 1. Target Rental Summary Card */}
             <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200/90 space-y-2.5">
@@ -383,7 +386,9 @@ export const ReturnConfirmModal: React.FC<ReturnConfirmModalProps> = ({
               )}
             </button>
           </div>
-        </form>
+          </form>
+          <ScrollToTopButton containerRef={scrollFormRef} />
+        </div>
       </div>
     </div>
   );

@@ -5,14 +5,10 @@
  */
 
 export const VITE_APP_BUILD_DATE: string =
-  (import.meta.env.VITE_APP_BUILD_DATE as string) ||
-  new Date()
-    .toLocaleDateString('ko-KR', { timeZone: 'Asia/Seoul' })
-    .replace(/\. /g, '.')
-    .replace(/\.$/, '');
+  (import.meta.env.VITE_APP_BUILD_DATE as string) || '2026.11.20';
 
 export const VITE_APP_BUILD_PATCH: string =
-  (import.meta.env.VITE_APP_BUILD_PATCH as string) || '01';
+  (import.meta.env.VITE_APP_BUILD_PATCH as string) || '03';
 
 export const APP_VERSION: string =
   (import.meta.env.VITE_APP_VERSION as string) ||
@@ -21,6 +17,8 @@ export const APP_VERSION: string =
 export const BUILD_ID: string =
   (import.meta.env.VITE_BUILD_ID as string) ||
   `tabzone-${APP_VERSION}`;
+
+export const CACHE_NAME: string = `tabzone-cache-${APP_VERSION}`;
 
 export interface ParsedVersion {
   year: number;

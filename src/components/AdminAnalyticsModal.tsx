@@ -26,7 +26,7 @@ import {
   Users,
   X,
 } from 'lucide-react';
-import React, { useMemo, useState } from 'react';
+import React, { useMemo, useRef, useState } from 'react';
 import {
   Bar,
   BarChart,
@@ -40,6 +40,7 @@ import {
 } from 'recharts';
 import * as XLSX from 'xlsx';
 import { Approver, AuthUser, Rental, Teacher } from '../types';
+import { ScrollToTopButton } from './ScrollToTopButton';
 
 interface AdminAnalyticsModalProps {
   isOpen: boolean;
@@ -93,6 +94,7 @@ export const AdminAnalyticsModal: React.FC<AdminAnalyticsModalProps> = ({
   // Table pagination
   const [currentPage, setCurrentPage] = useState<number>(1);
   const [rowsPerPage, setRowsPerPage] = useState<number>(15);
+  const scrollBodyRef = useRef<HTMLDivElement | null>(null);
 
   if (!isOpen) return null;
 
@@ -908,7 +910,8 @@ export const AdminAnalyticsModal: React.FC<AdminAnalyticsModalProps> = ({
         </div>
 
         {/* Modal Scrollable Body */}
-        <div className="p-5 sm:p-7 flex-1 overflow-y-auto space-y-6">
+        <div className="relative flex-1 min-h-0 flex flex-col">
+          <div ref={scrollBodyRef} className="p-5 sm:p-7 flex-1 overflow-y-auto space-y-6">
           {/* TAB 1: 요일별 & 시간대별 빈도 */}
           {activeTab === 'weekday-period' && (
             <div className="space-y-6 animate-in fade-in duration-150">
@@ -1836,6 +1839,8 @@ export const AdminAnalyticsModal: React.FC<AdminAnalyticsModalProps> = ({
               </div>
             </div>
           )}
+          </div>
+          <ScrollToTopButton containerRef={scrollBodyRef} watchKey={activeTab} />
         </div>
 
         {/* Footer */}

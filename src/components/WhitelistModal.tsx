@@ -21,12 +21,13 @@ import {
   User,
   X,
 } from 'lucide-react';
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { SUPER_ADMIN_EMAIL } from '../services/authService';
 import { RentalUpdateInput } from '../services/rentalService';
 import { compareTeachers } from '../services/teacherService';
 import { BackupManagementTab } from './BackupManagementTab';
 import { DeviceManagementTab } from './DeviceManagementTab';
+import { ScrollToTopButton } from './ScrollToTopButton';
 import {
   Approver,
   AuthUser,
@@ -120,6 +121,7 @@ export const WhitelistModal: React.FC<WhitelistModalProps> = ({
   initialTab = 'rentals',
 }) => {
   const [activeTab, setActiveTab] = useState<MasterTabType>(initialTab);
+  const scrollBodyRef = useRef<HTMLDivElement | null>(null);
 
   // Whitelist Form State
   const [newEmail, setNewEmail] = useState('');
@@ -637,7 +639,8 @@ export const WhitelistModal: React.FC<WhitelistModalProps> = ({
         </div>
 
         {/* Modal Scrollable Body */}
-        <div className="p-5 sm:p-6 space-y-5 overflow-y-auto flex-1">
+        <div className="relative flex-1 min-h-0 flex flex-col">
+          <div ref={scrollBodyRef} className="p-5 sm:p-6 space-y-5 overflow-y-auto flex-1">
           {/* Status Message */}
           {msg && (
             <div
@@ -1657,6 +1660,8 @@ export const WhitelistModal: React.FC<WhitelistModalProps> = ({
               onStatusMessage={(statusMsg) => setMsg(statusMsg)}
             />
           )}
+          </div>
+          <ScrollToTopButton containerRef={scrollBodyRef} watchKey={activeTab} />
         </div>
       </div>
     </div>
